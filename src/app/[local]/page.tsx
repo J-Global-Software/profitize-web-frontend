@@ -36,8 +36,9 @@ export default function GlobalConsulting() {
 				{/* Industries */}
 				<Industries />
 
-				{/* Services */}
+				{/* Services 
 				<Services />
+				*/}
 				{/* Pricing 
 				<section className="max-w-[1200px] mx-auto px-6 py-24" id="pricing">
 					<div className="text-center mb-16">

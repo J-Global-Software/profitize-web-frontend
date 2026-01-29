@@ -17,7 +17,7 @@ export default function ClientLogos() {
 	];
 
 	return (
-		<section className="py-20 border-t border-gray-100">
+		<section className="py-20 border-t bg-white  border-gray-100">
 			<div className="max-w-[1200px] mx-auto px-6 text-center">
 				<p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-12">Empowering Global Market Leaders</p>
 

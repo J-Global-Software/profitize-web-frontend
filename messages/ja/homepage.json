@@ -28,28 +28,28 @@
         }
     },
     "whoWeHelp": {
-        "header": "支援対象",
+        "header": "対象となるお客様",
         "description1": {
-            "before": "Profitizeは、",
-            "highlight": "個人、部門、グローバル企業",
-            "after": "の持続可能な成長へのロードマップを提供します。カスタマイズされたバイリンガルワークショップと戦略的ソリューションを通じて、",
-            "highlight2": "潜在力と利益",
-            "after2": "のギャップを埋めます。"
+            "before": "Profitizeは、個人、部門、そしてグローバル企業に対し、",
+            "highlight": "持続的な成長",
+            "after": "へのロードマップを提供します。お客様の目標に合わせてカスタマイズされたバイリンガル・ワークショップと戦略的ソリューションを通じて、",
+            "highlight2": "潜在能力を利益へと",
+            "after2": "変える架け橋となります。"
         },
         "description2": {
             "before": "",
-            "highlight": "J-Globalの国際的専門知識",
-            "after": "をバックグラウンドに、さまざまなセクターや地域で事業を展開する組織を支援します。"
+            "highlight": "J-Globalの国際的な知見",
+            "after": "を背景に、多様な業界や地域で活動する組織を強力にサポートします。"
         },
         "imageOverlaySmall": "グローバルな視点",
-        "imageOverlayTitleLine1": "潜在力から",
-        "imageOverlayTitleLine2": "利益へ",
+        "imageOverlayTitleLine1": "潜在能力から",
+        "imageOverlayTitleLine2": "利益の創出へ",
         "card1Title": "個人・リーダー",
-        "card1Text": "個人および経営層の成長支援。",
+        "card1Text": "パーソナル成長およびエグゼクティブとしての成長。",
         "card2Title": "チーム・部門",
-        "card2Text": "内部整合性と実行力の向上。",
+        "card2Text": "組織内の連携強化と実行力の向上。",
         "card3Title": "グローバル企業",
-        "card3Text": "国際的成長支援。"
+        "card3Text": "国際的な成長支援とグローバル展開。"
     },
     "methodology": {
         "header": {
@@ -63,11 +63,11 @@
                 "next": "次へ →",
                 "progress": "ステップ {current} / {total}"
             },
-            "step01_title": "戦略目標",
+            "step01_title": "戦略的目標",
             "step01_text": "長期的な収益性とグローバルな市場ポジションに合致した、明確で高次元な目標を定義します。このフェーズは、変革プロジェクト全体の指針（ノーススター）を確立します。",
-            "step02_title": "ステークホルダーからのインプット",
+            "step02_title": "インプット",
             "step02_text": "組織のあらゆる層から重要なフィードバックを収集します。質の高いワークショップや詳細なインタビューを実施し、部門を超えた合意形成と組織の足並みを揃えます。",
-            "step03_title": "戦略統合",
+            "step03_title": "戦略の統合",
             "step03_text": "現場のチームが効率化や革新的なコスト削減の機会を特定できるよう支援します。経営陣のビジョンと現場の現実のギャップを埋める重要なステップです。",
             "step04_title": "個人の目標",
             "step04_text": "マクロ戦略を測定可能な個人KPIに落とし込みます。すべてのチームメンバーが、大きなミッションに対する自らの貢献を理解し、主体性を持てるようにします。",
@@ -107,30 +107,30 @@
     },
     "industries": {
         "header": {
-            "title": "対応業界",
-            "description": "専門チームによる、高成長のグローバルセクター向けのターゲット化された専門知識。"
+            "title": "対象業界",
+            "description": "専門チームによる機能的なアプローチで、成長著しいグローバルセクターに特化した知見を提供します。"
         },
         "list": {
-            "advertising": "広告",
+            "advertising": "広告・宣伝",
             "automobile": "自動車",
             "education": "教育",
             "entertainment": "エンターテインメント",
             "finance": "金融",
-            "hospitality": "ホスピタリティ",
-            "itTechnology": "IT／テクノロジー",
+            "hospitality": "ホスピタリティ・観光",
+            "itTechnology": "IT・テクノロジー",
             "lifeScience": "ライフサイエンス",
             "manufacturing": "製造業"
         }
     },
     "resources": {
-        "header": "無料イントロダクションワークショップ",
+        "header": "無料入門ワークショップ",
         "workshops": {
             "w1": {
                 "date": "24",
                 "month": "2月",
-                "title": "英語/バイリンガル",
+                "title": "英語・バイリンガル",
                 "detail": "Zoom • 20:00-21:30",
-                "cta": "予約する",
+                "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w2": {
@@ -138,19 +138,19 @@
                 "month": "2月",
                 "title": "日本語",
                 "detail": "Zoom • 19:30-21:00",
-                "cta": "予約する",
+                "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             }
         }
     },
     "footer": {
-        "heading": "グローバルロードマップを共に築く",
+        "heading": "グローバルな成長へのロードマップを共に描きましょう。",
         "contactPrefix": "メール",
         "email": "jon.lynch@profitize.jp",
-        "bottomText": "© 2024 グローバルコンサルティンググループ。30％プロモーションは期間限定。",
-        "privacy": "プライバシー",
+        "bottomText": "© 2026年 プロフィタイズ株式会社 。",
+        "privacy": "プライバシーポリシー",
         "terms": "利用規約",
-        "ethics": "倫理",
+        "ethics": "企業倫理",
         "form": {
             "fullName": "氏名",
             "fullNamePlaceholder": "山田 太郎"

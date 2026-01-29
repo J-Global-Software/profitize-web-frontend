@@ -5,27 +5,21 @@ export default function Resources() {
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 					{/* ================= RIGHT: WORKSHOPS ================= */}
 					<div className="lg:col-span-2">
-						<h4 className="text-3xl font-black mb-8">Upcoming Workshops</h4>
+						<h4 className="text-3xl font-black mb-8">Free introductory Workshops</h4>
 
 						<div className="space-y-4">
 							{[
 								{
-									date: "12",
-									month: "OCT",
-									title: "B2B Scaling in Japan",
-									detail: "Virtual Summit • 4:00 PM GMT",
-								},
-								{
 									date: "24",
-									month: "OCT",
-									title: "Global Engineering Standards",
-									detail: "Hybrid Workshop • Singapore Hub",
+									month: "Feb",
+									title: "English/Bilingual",
+									detail: "Zoom • 8pm-9:30pm",
 								},
 								{
-									date: "05",
-									month: "NOV",
-									title: "Cross-Border Retail Ethics",
-									detail: "Webinar • 9:00 AM EST",
+									date: "26",
+									month: "Feb",
+									title: "Japanese",
+									detail: "Zoom • 7:30pm-9pm",
 								},
 							].map((workshop) => (
 								<div key={workshop.title} className="bg-white p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-6 group hover:shadow-lg transition-all border border-transparent hover:border-[#1754cf]/20">

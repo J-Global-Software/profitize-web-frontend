@@ -10,25 +10,33 @@ export default function Footer() {
 							Let&apos;s Build Your <br />
 							Global Roadmap.
 						</h2>
+						{/*
+<div className="space-y-4">
+  <div className="flex gap-4 pt-4">
+    {[
+      { icon: "share", label: "Share" },
+      { icon: "mail", label: "Email" },
+      { icon: "call", label: "Call" },
+    ].map((item) => (
+      <a
+        key={item.icon}
+        href="#"
+        aria-label={item.label}
+        className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-[#1754cf] hover:text-white transition-colors"
+      >
+        <span className="material-symbols-outlined">{item.icon}</span>
+      </a>
+    ))}
+  </div>
+</div>
+*/}
 
-						<div className="space-y-4">
-							<p className="text-gray-500 max-w-[400px]">Headquartered in Sydney, serving clients worldwide. Partner with us for high-impact transformation.</p>
-
-							<div className="flex gap-4 pt-4">
-								{[
-									{ icon: "share", label: "Share" },
-									{ icon: "mail", label: "Email" },
-									{ icon: "call", label: "Call" },
-								].map((item) => (
-									<a key={item.icon} href="#" aria-label={item.label} className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-[#1754cf] hover:text-white transition-colors">
-										<span className="material-symbols-outlined">{item.icon}</span>
-									</a>
-								))}
-							</div>
+						<div className="mt-5">
+							Email: <span className="text-blue-600 bold">jon.lynch@profitize.jp</span>
 						</div>
 					</div>
 
-					{/* Right – Form */}
+					{/* Right – Form 
 					<div className="bg-gray-50 p-10 rounded-3xl">
 						<form className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div className="flex flex-col gap-2">
@@ -59,18 +67,12 @@ export default function Footer() {
 								Send Message
 							</button>
 						</form>
-					</div>
+					</div>	*/}
 				</div>
 
 				{/* ================= BOTTOM ================= */}
 				<div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8">
 					<div className="flex items-center gap-2">
-						<div className="text-[#1754cf] opacity-50">
-							<svg className="w-5 h-5" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-								<path d="M42.1739 20.1739L27.8261 5.82609C29.1366 7.13663 28.3989 10.1876 26.2002 13.7654C24.8538 15.9564 22.9595 18.3449 20.6522 20.6522C18.3449 22.9595 15.9564 24.8538 13.7654 26.2002C10.1876 28.3989 7.13663 29.1366 5.82609 27.8261L20.1739 42.1739C21.4845 43.4845 24.5355 42.7467 28.1133 40.548C30.3042 39.2016 32.6927 37.3073 35 35C37.3073 32.6927 39.2016 30.3042 40.548 28.1133C42.7467 24.5355 43.4845 21.4845 42.1739 20.1739Z" fill="currentColor" />
-							</svg>
-						</div>
-
 						<p className="text-xs font-medium text-gray-400">© 2024 Global Consulting Group. 30% Promo active for limited time.</p>
 					</div>
 

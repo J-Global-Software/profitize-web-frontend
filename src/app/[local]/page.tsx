@@ -121,10 +121,9 @@ export default function GlobalConsulting() {
 
 				*/}
 
-				{/* Client Logos
+				{/* Client Logos */}
 				<ClientLogos />
 
-				 */}
 				{/* Resources */}
 				<Resources />
 			</main>

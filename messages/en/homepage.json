@@ -1,0 +1,109 @@
+{
+    "header": {
+        "nav": {
+            "whoWeHelp": "Who We Help",
+            "industries": "Industries",
+            "services": "Services",
+            "resources": "Resources"
+        },
+        "cta": {
+            "bookConsultation": "Book Consultation"
+        },
+        "aria": {
+            "home": "Home",
+            "openMenu": "Open menu",
+            "closeMenu": "Close menu"
+        }
+    },
+    "hero": {
+        "title": {
+            "line1": "Synergized",
+            "line2": "teams.",
+            "highlight": "Sustainable growth."
+        },
+        "description": "Align your teams to optimize processes, cut costs, reduce risk, and scale sustainably. Join our motivating system of coaching, workshops, surveys and execution support.",
+        "cta": {
+            "bookConsultation": "Book Consultation",
+            "viewOffer": "View Offer"
+        }
+    },
+    "methodology": {
+        "header": {
+            "title": "Seven-Step Methodology",
+            "description": "Success happens when leadership vision and day-to-day execution move in lockstep. Our collaborative, seven-step process blends stakeholder insight with bottom-up strategy—aligning teams, clarifying accountability, and focusing your entire organization on measurable, positive outcomes."
+        },
+        "steps": {
+            "labels": {
+                "step": "STEP",
+                "previous": "← Previous",
+                "next": "Next →",
+                "progress": "Step {current} of {total}"
+            },
+            "navigation": [
+                "Strategic Goals",
+                "Stakeholder Input",
+                "Strategy Integration",
+                "Individual Goals",
+                "Planning & Tracking",
+                "Coordination",
+                "Evaluation"
+            ],
+            "content": [
+                {
+                    "title": "Strategic Goal Setting",
+                    "text": "We define clear, high-level objectives that align with long-term profitability and global market positioning. This phase establishes the North Star for the entire transformation project."
+                },
+                {
+                    "title": "Stakeholder Input",
+                    "text": "Capturing critical feedback from all organizational layers. We conduct high-prestige workshops and deep-dive interviews to ensure cross-functional buy-in and organizational alignment."
+                },
+                {
+                    "title": "Bottom-Up Strategy Integration",
+                    "text": "Empowering operational teams to identify efficiencies and innovative cost-cutting opportunities. This step bridges the gap between executive vision and ground-floor reality."
+                },
+                {
+                    "title": "Individual Goal Development",
+                    "text": "Translating macro strategies into measurable, personalized KPIs. We ensure every team member understands their unique contribution to the larger mission."
+                },
+                {
+                    "title": "Project Planning & Tracking",
+                    "text": "Rigorous roadmap execution with real-time data visualization. Our proprietary tracking systems provide absolute transparency on progress and risk mitigation."
+                },
+                {
+                    "title": "Cross-Functional Coordination",
+                    "text": "Breaking down silos through centralized communication frameworks. We synchronize efforts across departments to eliminate redundant processes and waste."
+                },
+                {
+                    "title": "Performance Evaluation",
+                    "text": "Comprehensive review cycles to refine strategies and optimize future performance. We quantify the final ROI and establish sustainable governance models for the future."
+                }
+            ]
+        }
+    },
+    "services": {
+        "header": {
+            "title": "Our Service Functions",
+            "description": "End-to-end consulting organized by functional expertise for maximum efficiency."
+        },
+        "cards": [
+            {
+                "title": "Sales & Growth",
+                "description": "Revenue optimization, global sales network development, and lead generation frameworks.",
+                "label": "Scale Strategy"
+            },
+            {
+                "title": "Engineering",
+                "description": "Software architecture, system scaling, and technical recruitment for global tech teams.",
+                "label": "Technical Depth"
+            },
+            {
+                "title": "R&D Advisory",
+                "description": "Innovation auditing, patent strategy, and research-led product development cycles.",
+                "label": "Pure Innovation"
+            }
+        ],
+        "cta": {
+            "learnMore": "Learn More"
+        }
+    }
+}

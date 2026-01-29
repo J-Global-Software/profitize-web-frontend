@@ -1,4 +1,5 @@
-import "./globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import "../globals.css";
 import { Roboto, Playfair_Display } from "next/font/google";
 
 const roboto = Roboto({
@@ -14,11 +15,13 @@ const playfair = Playfair_Display({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en" className="light">
+		<html lang="en">
 			<head>
 				<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 			</head>
-			<body className={`${roboto.variable} ${playfair.variable} bg-background-light dark:bg-background-dark`}>{children}</body>
+			<body className={`${roboto.variable} ${playfair.variable} bg-background-light dark:bg-background-dark`}>
+				<NextIntlClientProvider>{children}</NextIntlClientProvider>
+			</body>
 		</html>
 	);
 }

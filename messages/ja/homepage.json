@@ -1,0 +1,178 @@
+{
+    "HeroSection": {
+        "heading": "週1からでも、変化が見える。<br></br><blue>J-Global</blue><br></br>ビジネススクールで、次のステージへ",
+        "subheading": "スキルと挑戦で、世界をつなぐ新世代リーダーに。",
+        "heroCTA": "まずは無料体験へ",
+        "heroSecondaryCTA": "詳しく見る"
+    },
+    "FreeTrialSection": {
+        "backgroundAlt": "背景画像",
+        "title": "まずは無料体験",
+        "feature1": "\\ 二週間無料体験！12/31まで /",
+        "feature2": "\\ 二週間無料体験！12/31まで /",
+        "cta": "2分で簡単に登録"
+    },
+    "LecturerIntroduction": {
+        "lecturerIntroduction": "講師紹介",
+        "name": "無料オンラインコーチングもジョンが担当します！",
+        "description": "英国ブリストル大卒。英国出身で現在は一橋大学にてグローバル・ビジネススキルについて講演を行っている。1990年に来日後、国際ビジネスコミュニケーションスキルを指導。その後、大手研修会社で異文化ビジネス講師を務める。2010年にビジネスコンサルティング会社(株) J-グローバルを設立。日本での豊富なビジネス経験を活かし、100社以上の日本企業や外資系企業にコンサルティングを行う。日本型ビジネスの強みと西洋の良さを併せ持つ「J-グローバル型ビジネス」を広めることを目的に、日本語/英語のバイリンガルセミナーを提供している。",
+        "description2": "あなたのキャリアパスを一緒に考え、マインドマップを作りながら楽しくお話させていただきます。日本語でも英語でもOKです。プログラムに参加する／しないに関係なく、ご自身の考えを整理するための20～30分になります。お気軽にお申し込みください。",
+        "coachingSupport": "無料オンラインコーチングもジョンが担当します！",
+        "bookCoaching": "無料コーチング予約！",
+        "otherLectures": "その他にも専門知識を持った講師陣がサポートいたします！",
+        "roles": {
+            "sarahBirchley": "ビジネススクールディレクター・講師・コーチ",
+            "nathanDeWitt": "講師",
+            "grahamLenz": "コーチ・サクセスサポーター",
+            "mizuhoShimada": "コミュニティコーチ",
+            "ikemOkoboshi": "コーチ・サクセスサポーター",
+            "hisakoMiyamori": "コーチ・サクセスサポーター"
+        }
+    },
+    "footer": {
+        "company": "会社情報",
+        "companyName": "J-グローバル株式会社",
+        "office": "オフィス",
+        "officeAddress": "〒151-0064 東京都渋谷区上原1-3-9",
+        "contact": "お問い合わせ",
+        "call": "電話",
+        "email": "メール",
+        "links": "リンク",
+        "contactUs": "お問い合わせ",
+        "privacyPolicy": "プライバシーポリシー",
+        "companyProfile": "会社概要",
+        "copyright": "全著作権所有"
+    },
+    "featuredIn": {
+        "featuredTitle": "掲載実績",
+        "featuredSubtitle": "主要メディアで紹介されました。",
+        "englishJournalOnline": "イングリッシュ・ジャーナル・オンライン",
+        "englishJournalOnlineDescription": "当社は、アルク株式会社のオンラインメディア「イングリッシュ・ジャーナル・オンライン」で紹介されました。",
+        "readFirstArticle": "最初の記事はこちら",
+        "readSecondArticle": "2本目の記事はこちら",
+        "keysession": "KeySession（キーセッション）",
+        "keysessionDescription": "当社CEOのジョンが、総合社員研修サイト「KeySession」にて異文化コミュニケーション研修の記事を監修しました。",
+        "introInterculturalCommunication": "異文化コミュニケーション入門",
+        "modernClassroomsTech": "最新テクノロジーが現代教育をどのように変えているか。",
+        "overseasAssignmentTraining": "海外赴任研修",
+        "digitalLearningInsights": "デジタル学習革新に関するさらなる洞察。",
+        "tipsSuccessfulAssignment": "海外赴任を成功させるためのポイントとは？",
+        "digitalEducationGrowth": "デジタル教育成長のための追加戦略。"
+    },
+    "benefits": {
+        "header": {
+            "title": "JBSオンラインワークショップのメリット",
+            "plus_sign": "＋"
+        },
+        "benefits_list": {
+            "flexible": "フレキシブルなスケジュール",
+            "convenient": "受講のしやすさ",
+            "affordable": "続けやすい価格",
+            "certified": "バッジや認定証付き",
+            "goal_oriented": "目標に合わせて選べる"
+        },
+        "intro": {
+            "text": "ひとりひとりに合わせたインタラクティブなワークショップで、グローバルビジネスの新しい可能性を手に入れましょう"
+        },
+        "content": {
+            "left_column_title": "フレキシブル、インタラクティブ、そしてグローバル",
+            "list_item_1": "毎週20以上のバイリンガルワークショップ（1時間）を、朝、昼、夜に開催しています。",
+            "list_item_2": "すぐに使える実践的なグローバルビジネスの知識やスキルの詰まったワークショップを自由に受けることができます。",
+            "list_item_3": "ミニMBAのようなパッケージ型のコースへのお申し込みで、6ヶ月間にわたる6つのプログラムと24のワークショップを受けることができます。",
+            "list_item_4": "↑全てのクラスがバイリンガルでインタラクティブでライブ形式となっています。"
+        },
+        "schedule": {
+            "class_schedule": "クラススケジュール",
+            "mon_thu": "月～木",
+            "saturday": "土曜日",
+            "period_morning": "午前",
+            "period_afternoon": "午後",
+            "period_evening": "夜間",
+            "time_morning": "7-10時",
+            "time_afternoon": "1-5時",
+            "time_evening": "7-10時",
+            "classes": "クラス",
+            "no_classes": "クラスなし"
+        }
+    },
+    "structure": {
+        "header": {
+            "title": "ワークショップの形式",
+            "plus_sign": "＋"
+        },
+        "intro": {
+            "title_1": "リラックスして、双方向性があり",
+            "title_2_span": "実践的",
+            "p1_part1": "",
+            "p1_part2_bold": "",
+            "p1_part3": "インタラクティブで実践的、リラックスして学べます当社のバイリンガルワークショップは、「間違いを恐れない」アプローチで、楽しく、インタラクティブで、学んだことがちゃんと身に付くように設計されています。参加者は日本語、英語どちらの言語でもで自由に話すことができます。",
+            "p1_part4_bold": "",
+            "p1_part5": "",
+            "p2_part1": "参加前に、ショートビデオやストーリーを見て、目標アンケートに答えてもらうことでカスタマイズされた内容を学ぶことができます。参加後はプログレスを記録し、学んだことを職場でのタスクやミニインターンシップを通じてすぐに実践することができるでしょう。",
+            "p2_part2_bold": "",
+            "p2_part3": ""
+        },
+        "online_workshop": {
+            "title": "オンラインワークショップ",
+            "flow_header": "ワークショップの流れ"
+        },
+        "features": [
+            {
+                "title": "フレキシブルなスクジュール",
+                "sub": "(朝、昼、夜)"
+            },
+            {
+                "title": "週20以上のクラス",
+                "sub": "(月～木・土、各1時間)"
+            },
+            {
+                "title": "好きな順番で受講OK！",
+                "sub": "(様々な有用なトピック)"
+            },
+            {
+                "title": "プログレスを確認",
+                "sub": "(バッジと認定証の受け取り）"
+            }
+        ],
+        "steps": [
+            {
+                "text": "楽しいアイスブレイク"
+            },
+            {
+                "text": "あなただけの学習方法"
+            },
+            {
+                "text": "練習でしっかり身につける"
+            },
+            {
+                "text": "ディベートとロールプレイ"
+            },
+            {
+                "text": "振り返り、実践へ"
+            }
+        ]
+    },
+    "programsSectionSubtitle": "グローバルスキル習得までの３ステップ",
+    "heroDescription": "J-Global\nビジネススクールへ\nようこそ!",
+    "clickFreeTrial": "無料トライアルはこちら",
+    "whyChooseUs": "J-Globalビジネススクールとは?",
+    "reason": "現役のビジネスコーチが教えるMini MBAや、世界に通用するプレゼンテーション方法、グローバルなマーケティング方法などグローバルビジネスプログラムをビジネス英語と同時にオンラインで学びます。",
+    "skillsReasonablePrice": "充実したプログラムとリーズナブルな料金",
+    "skillsReasonablePriceDescription": "異文化チームワーク、プロジfdkクトマネジメント、駐在員、海外営業など、自分に今必要なスキルを的確に学ぶことができる充実のプログラム。\n新しいプログラムが毎月追加されます。",
+    "customizedLearning": "自分に合ったカスタマイズされた学習内容",
+    "customizedLearningDescription": "プロのコーチがあなたの強みやお悩みを分析し、あなたに合わせた学習計画を立案します。\n独自に開発されたEラーニングやナレッジハブなどのツールも使いたい放題です。",
+    "interculturalMindset": "グローバルなマーケティング方法などをビジネス英語と同時に学ぶことができます。",
+    "interculturalMindsetDescription": "英語に自信がなくても大丈夫です。バイリンガルの講師が英語と日本語の両方を使ったウェビナーを行います。\nグローバルビジネスを学びながら同時にビジネス英語も学べます。",
+    "achievements": "J-Globalの実績",
+    "achievementsDescription": "J-Globalは、100社以上の日本企業でのコンサルティングや、グローバル化に向けたワークショップで高い評価を得ています。",
+    "achievementsSection1": "J-Globalは長いあいだ、企業や人がどうすればグローバルに成長し、変化できるのかを学んできました。そして今、その経験をこのウェビナーで皆さまにお伝えします。",
+    "achievementsSection2": "私たちのミッションは、日本の企業が異文化のビジネススタイルを取り入れ、グローバルに活躍できるようサポートすることです。",
+    "achievementsSection3": "日本と海外それぞれのワークスタイルを組み合わせ、強くて多様性のあるチームづくりや、グローバルにで成長するための土台づくりをお手伝いします。",
+    "thematicProgrammes": "テーマ別プログラム",
+    "miniMBA": "ミニMBA",
+    "miniMBADescription": "最短6ヶ月で修了できるこのミニMBAは、グローバルビジネスの知識を身につけ、通常のMBAに含まれる主要なトピックを学ぶことができます。",
+    "miniMBAAddition": "各トピックの他に、ロールプレイングゲームやミニインターンシップなどもあり実践しながら楽しく学ぶことができます。",
+    "sixWaysLearning": "2つのトピックからなる6つの学習テーマ",
+    "learnMore": "詳しく見る",
+    "freeCoaching": "無料予約！"
+}

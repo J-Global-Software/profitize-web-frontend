@@ -27,6 +27,30 @@
             "viewOffer": "View Offer"
         }
     },
+    "whoWeHelp": {
+        "header": "Who We Help",
+        "description1": {
+            "before": "Profitize provides the roadmap to",
+            "highlight": "sustainable growth",
+            "after": "for individuals, departments, and global companies alike. We bridge the gap between",
+            "highlight2": "potential and profit",
+            "after2": "through bespoke bilingual workshops and strategic solutions tailored to your goals."
+        },
+        "description2": {
+            "before": "Backed by",
+            "highlight": "J-Global’s international expertise",
+            "after": ", we support organizations operating across diverse sectors and regions."
+        },
+        "imageOverlaySmall": "Global Perspective",
+        "imageOverlayTitleLine1": "From Potential",
+        "imageOverlayTitleLine2": "to Profit",
+        "card1Title": "Individuals & Leaders",
+        "card1Text": "Personal and executive growth.",
+        "card2Title": "Teams & Departments",
+        "card2Text": "Internal alignment and execution.",
+        "card3Title": "Global Companies",
+        "card3Text": "International growth support."
+    },
     "methodology": {
         "header": {
             "title": "Seven-Step Methodology",
@@ -39,45 +63,20 @@
                 "next": "Next →",
                 "progress": "Step {current} of {total}"
             },
-            "navigation": [
-                "Strategic Goals",
-                "Stakeholder Input",
-                "Strategy Integration",
-                "Individual Goals",
-                "Planning & Tracking",
-                "Coordination",
-                "Evaluation"
-            ],
-            "content": [
-                {
-                    "title": "Strategic Goal Setting",
-                    "text": "We define clear, high-level objectives that align with long-term profitability and global market positioning. This phase establishes the North Star for the entire transformation project."
-                },
-                {
-                    "title": "Stakeholder Input",
-                    "text": "Capturing critical feedback from all organizational layers. We conduct high-prestige workshops and deep-dive interviews to ensure cross-functional buy-in and organizational alignment."
-                },
-                {
-                    "title": "Bottom-Up Strategy Integration",
-                    "text": "Empowering operational teams to identify efficiencies and innovative cost-cutting opportunities. This step bridges the gap between executive vision and ground-floor reality."
-                },
-                {
-                    "title": "Individual Goal Development",
-                    "text": "Translating macro strategies into measurable, personalized KPIs. We ensure every team member understands their unique contribution to the larger mission."
-                },
-                {
-                    "title": "Project Planning & Tracking",
-                    "text": "Rigorous roadmap execution with real-time data visualization. Our proprietary tracking systems provide absolute transparency on progress and risk mitigation."
-                },
-                {
-                    "title": "Cross-Functional Coordination",
-                    "text": "Breaking down silos through centralized communication frameworks. We synchronize efforts across departments to eliminate redundant processes and waste."
-                },
-                {
-                    "title": "Performance Evaluation",
-                    "text": "Comprehensive review cycles to refine strategies and optimize future performance. We quantify the final ROI and establish sustainable governance models for the future."
-                }
-            ]
+            "step01_title": "Strategic Goals",
+            "step01_text": "We define clear, high-level objectives that align with long-term profitability and global market positioning. This phase establishes the North Star for the entire transformation project.",
+            "step02_title": "Stakeholder Input",
+            "step02_text": "Capturing critical feedback from all organizational layers. We conduct high-prestige workshops and deep-dive interviews to ensure cross-functional buy-in and organizational alignment.",
+            "step03_title": "Strategy Integration",
+            "step03_text": "Empowering operational teams to identify efficiencies and innovative cost-cutting opportunities. This step bridges the gap between executive vision and ground-floor reality.",
+            "step04_title": "Individual Goals",
+            "step04_text": "Translating macro strategies into measurable, personalized KPIs. We ensure every team member understands their unique contribution to the larger mission.",
+            "step05_title": "Planning & Tracking",
+            "step05_text": "Rigorous roadmap execution with real-time data visualization. Our proprietary tracking systems provide absolute transparency on progress and risk mitigation.",
+            "step06_title": "Coordination",
+            "step06_text": "Breaking down silos through centralized communication frameworks. We synchronize efforts across departments to eliminate redundant processes and waste.",
+            "step07_title": "Evaluation",
+            "step07_text": "Comprehensive review cycles to refine strategies and optimize future performance. We quantify the final ROI and establish sustainable governance models for the future."
         }
     },
     "services": {
@@ -85,25 +84,76 @@
             "title": "Our Service Functions",
             "description": "End-to-end consulting organized by functional expertise for maximum efficiency."
         },
-        "cards": [
-            {
+        "cards": {
+            "salesGrowth": {
                 "title": "Sales & Growth",
                 "description": "Revenue optimization, global sales network development, and lead generation frameworks.",
                 "label": "Scale Strategy"
             },
-            {
+            "engineering": {
                 "title": "Engineering",
                 "description": "Software architecture, system scaling, and technical recruitment for global tech teams.",
                 "label": "Technical Depth"
             },
-            {
+            "rdAdvisory": {
                 "title": "R&D Advisory",
                 "description": "Innovation auditing, patent strategy, and research-led product development cycles.",
                 "label": "Pure Innovation"
             }
-        ],
+        },
         "cta": {
             "learnMore": "Learn More"
+        }
+    },
+    "industries": {
+        "header": {
+            "title": "Industries Served",
+            "description": "Targeted expertise across high-growth global sectors with specialized functional teams."
+        },
+        "list": {
+            "advertising": "Advertising",
+            "automobile": "Automobile",
+            "education": "Education",
+            "entertainment": "Entertainment",
+            "finance": "Finance",
+            "hospitality": "Hospitality",
+            "itTechnology": "IT / Technology",
+            "lifeScience": "Life Science",
+            "manufacturing": "Manufacturing"
+        }
+    },
+    "resources": {
+        "header": "Free introductory Workshops",
+        "workshops": {
+            "w1": {
+                "date": "24",
+                "month": "Feb",
+                "title": "English/Bilingual",
+                "detail": "Zoom • 8pm-9:30pm",
+                "cta": "Reserve Spot",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            },
+            "w2": {
+                "date": "26",
+                "month": "Feb",
+                "title": "Japanese",
+                "detail": "Zoom • 7:30pm-9pm",
+                "cta": "Reserve Spot",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            }
+        }
+    },
+    "footer": {
+        "heading": "Let's Build Your Global Roadmap.",
+        "contactPrefix": "Email",
+        "email": "jon.lynch@profitize.jp",
+        "bottomText": "© 2024 Global Consulting Group. 30% Promo active for limited time.",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "ethics": "Ethics",
+        "form": {
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "John Doe"
         }
     }
 }

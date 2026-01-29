@@ -1,5 +1,9 @@
+import { useTranslations } from "next-intl";
+
 export default function Industries() {
-	const industries = ["Advertising", "Automobile", "Education", "Entertainment", "Finance", "Hospitality", "IT / Technology", "Life Science", "Manufacturing"];
+	const t = useTranslations("homepage");
+
+	const industries = ["advertising", "automobile", "education", "entertainment", "finance", "hospitality", "itTechnology", "lifeScience", "manufacturing"];
 
 	return (
 		<section className="bg-gray-50 py-16" id="industries">
@@ -7,8 +11,8 @@ export default function Industries() {
 				{/* Header */}
 				<div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
 					<div className="max-w-xl">
-						<h2 className="text-4xl md:text-5xl font-black mb-3">Industries Served</h2>
-						<p className="text-gray-500 text-sm">Targeted expertise across high-growth global sectors with specialized functional teams.</p>
+						<h2 className="text-4xl md:text-5xl font-black mb-3">{t("industries.header.title")}</h2>
+						<p className="text-gray-500 text-sm">{t("industries.header.description")}</p>
 					</div>
 				</div>
 
@@ -16,7 +20,7 @@ export default function Industries() {
 				<div className="flex flex-wrap gap-3 justify-center md:justify-start">
 					{industries.map((industry) => (
 						<div key={industry} className="group flex items-center gap-2.5 bg-white border border-gray-100 px-5 py-3 rounded-full hover:border-[#1754cf]/40 hover:bg-[#f0f4ff]/50 transition-all cursor-pointer">
-							<span className="text-sm font-semibold text-gray-700">{industry}</span>
+							<span className="text-sm font-semibold text-gray-700">{t(`industries.list.${industry}`)}</span>
 						</div>
 					))}
 				</div>

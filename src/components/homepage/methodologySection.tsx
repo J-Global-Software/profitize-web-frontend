@@ -4,9 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
+const ICONS = ["search_check", "insights", "rocket_launch", "auto_fix_high", "trending_up", "diversity_3", "assessment"];
+
 export default function MethodologySection() {
 	const t = useTranslations("homepage");
-	const [step, setStep] = useState(1);
+	const [step, setStep] = useState(0);
 
 	const steps = [
 		{ title: t("methodology.steps.step01_title"), text: t("methodology.steps.step01_text") },
@@ -18,92 +20,118 @@ export default function MethodologySection() {
 		{ title: t("methodology.steps.step07_title"), text: t("methodology.steps.step07_text") },
 	];
 
-	const current = steps[step - 1];
-	const imageSrc = `/images/${String(step).padStart(2, "0")}.jpg`;
+	const imageSrc = `/images/${String(step + 1).padStart(2, "0")}.jpg`;
 
 	return (
-		<section id="methodology" className="bg-white py-16 md:py-24">
-			<div className="max-w-[1000px] mx-auto px-6 text-center">
-				<h2 className="serif-header text-4xl md:text-5xl font-black text-prestige-navy leading-tight">{t("methodology.header.title")}</h2>
-				<div className="h-1 w-20 bg-primary mt-2 mb-4 mx-auto" />
-				<p className="text-lg text-gray-600 max-w-3xl mx-auto">{t("methodology.header.description")}</p>
+		<section id="methodology" className="pt-24 pb-10 bg-[#f6f6f8]">
+			{/* Header */}
+			<div className="max-w-[1100px] mx-auto px-6 text-center mb-12">
+				<h2 className="text-4xl md:text-5xl font-black text-[#0e121b]">{t("methodology.header.title")}</h2>
+
+				<p className="mt-3 text-lg max-w-3xl mx-auto text-[#4e6797]">{t("methodology.header.description")}</p>
 			</div>
 
-			{/* Navigation */}
-			<div className="max-w-3xl mx-auto mt-12">
-				<div className="grid grid-cols-7 border-b border-gray-100 mb-8 relative">
-					<div className="absolute bottom-0 h-1 bg-primary transition-all duration-500 ease-out" style={{ width: `${100 / steps.length}%`, left: `${((step - 1) * 100) / steps.length}%` }} />
-					{steps.map((s, i) => {
-						const index = i + 1;
-						const active = step === index;
-						const completed = step > index;
+			{/* Card */}
+			<div className="max-w-[1200px] mx-auto px-6">
+				<div className="bg-white rounded-3xl shadow-lg overflow-hidden flex flex-col lg:flex-row min-h-[400px]">
+					{/* Sidebar */}
+					<aside className="w-full lg:w-[300px] lg:pt-5 border-b lg:border-b-0 lg:border-r border-[#e5e7eb] bg-[rgba(249,250,251,0.6)]">
+						<nav className="p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+							{steps.map((stepItem, i) => {
+								const active = i === step;
 
-						return (
-							<button
-								key={i}
-								onClick={() => setStep(index)}
-								className={`
-		group relative flex flex-col items-center
-		py-4 px-2
-		rounded-lg
-		border transition-all duration-300 ease-out
+								return (
+									<button
+										key={i}
+										onClick={() => setStep(i)}
+										className={`
+            group
+            flex items-center gap-3
+            px-4 py-2
+            rounded-xl
+            text-sm lg:text-md
+            whitespace-nowrap
+            min-w-max
+            transition-all duration-300
+            ${active ? "bg-[#1754cf] text-white font-bold shadow-lg shadow-[#1754cf]/25" : "text-[#6b7280] hover:bg-white lg:hover:translate-x-1 hover:shadow-sm"}
+          `}
+									>
+										<span className="material-symbols-outlined text-lg shrink-0">{ICONS[i]}</span>
 
-		${active ? "border-primary bg-primary/5 scale-[1.03]" : "border-transparent opacity-50 hover:opacity-80 hover:border-gray-200"}
-	`}
-							>
-								<span
-									className={`text-xs font-bold mb-1 tracking-wide transition-colors
-		${active ? "text-primary" : "text-gray-500"}`}
-								>
-									{t("methodology.steps.labels.step")}
-								</span>
+										<span className="leading-tight">
+											{String(i + 1).padStart(2, "0")}. {stepItem.title}
+										</span>
+									</button>
+								);
+							})}
+						</nav>
+					</aside>
 
-								<span
-									className={`serif-header text-xl md:text-2xl font-black transition-colors
-		${active ? "text-primary" : completed ? "text-prestige-navy" : "text-gray-400"}`}
-								>
-									{String(index).padStart(2, "0")}
-								</span>
+					{/* Content */}
+					<div className="flex-1 relative bg-white p-8 overflow-hidden">
+						{/* Big number */}
 
-								<span
-									className={`mt-2 text-[11px] md:text-xs text-center leading-tight max-w-[90px] transition-colors
-		${active ? "text-primary font-semibold" : "text-gray-500"}`}
-								>
-									{s.title}
-								</span>
-							</button>
-						);
-					})}
-				</div>
+						{/* Animated content */}
+						<div key={step} className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center animate-[fadeSlide_0.4s_ease-out]">
+							{/* Text */}
+							<div className="max-w-xl">
+								<div className="inline-flex items-center gap-2 bg-[#1754cf]/10 text-[#1754cf] px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
+									{t("methodology.steps.labels.step")} {step + 1}
+								</div>
 
-				{/* Step Content */}
-				<Step title={current.title} text={current.text} image={imageSrc} />
+								<h3 className="text-4xl xl:text-4xl font-bold text-[#0e121b] mb-4">{steps[step].title}</h3>
 
-				{/* Arrows */}
-				<div className="flex justify-between items-center mt-8">
-					<button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${step === 1 ? "opacity-0 pointer-events-none" : "bg-gray-100 hover:bg-gray-200 text-prestige-navy"}`}>
-						{t("methodology.steps.labels.previous")}
-					</button>
-					<div className="text-sm text-gray-500">{t("methodology.steps.labels.progress", { current: step, total: steps.length })}</div>
-					<button onClick={() => setStep(Math.min(steps.length, step + 1))} disabled={step === steps.length} className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${step === steps.length ? "opacity-0 pointer-events-none" : "bg-primary hover:bg-primary/90 text-white"}`}>
-						{t("methodology.steps.labels.next")}
-					</button>
+								<p className="text-lg font-medium text-[#4e6797]">{steps[step].text}</p>
+							</div>
+
+							{/* Image */}
+							<div className="relative group w-full h-[130px] lg:h-[200px] overflow-hidden">
+								<Image
+									key={imageSrc}
+									src={imageSrc}
+									alt={steps[step].title}
+									fill
+									sizes="(max-width: 1024px) 100vw, 50vw"
+									priority
+									className="
+										object-contain
+										transition-all duration-700 ease-out
+										scale-[1.02]
+										
+									"
+								/>
+							</div>
+						</div>
+
+						{/* Footer */}
+						<div className="mt-10 pt-6 border-t border-[#e5e7eb] flex items-center justify-between relative z-10">
+							<div className="flex gap-1">
+								{steps.map((_, i) => (
+									<div key={i} className={`w-4 h-1 rounded-full transition-all ${i === step ? "bg-[#1754cf] scale-x-110" : "bg-[#e5e7eb]"}`} />
+								))}
+							</div>
+
+							<span className="text-[10px] font-bold text-[#9ca3af]">
+								{step + 1} / {steps.length}
+							</span>
+						</div>
+					</div>
 				</div>
 			</div>
+
+			{/* Animation */}
+			<style jsx>{`
+				@keyframes fadeSlide {
+					from {
+						opacity: 0;
+						transform: translateY(8px);
+					}
+					to {
+						opacity: 1;
+						transform: translateY(0);
+					}
+				}
+			`}</style>
 		</section>
-	);
-}
-
-function Step({ title, text, image }: { title: string; text: string; image: string }) {
-	return (
-		<div className="flex flex-col md:flex-row gap-8 items-center bg-gray-50 p-8 md:p-12 rounded-2xl border border-gray-100 shadow-sm min-h-[320px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-			<div className="flex-1">
-				<h3 className="serif-header text-3xl font-bold text-prestige-navy mb-4">{title}</h3>
-				<p className="text-lg text-gray-600 leading-relaxed max-w-2xl">{text}</p>
-			</div>
-			<div className="hidden md:block w-40 h-40 bg-gray-50 rounded-xl overflow-hidden opacity-80 flex-shrink-0 transition-transform duration-300 hover:scale-105">
-				<Image src={image} alt={title} width={160} height={160} className="w-full h-full object-cover mix-blend-multiply" />
-			</div>
-		</div>
 	);
 }

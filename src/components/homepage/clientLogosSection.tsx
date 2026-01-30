@@ -27,7 +27,7 @@ export default function ClientLogos() {
 		<section className="py-20 border-t bg-white border-gray-100 overflow-hidden">
 			<div className="max-w-[1200px] mx-auto px-6 text-center">
 				<p
-					className="font-bold text-3xl
+					className="font-bold text-xl md:text-3xl
 				 text-gray-400 uppercase tracking-widest mb-12"
 				>
 					{t("clientLogos.title")}

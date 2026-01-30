@@ -15,7 +15,7 @@ export default function Hero() {
 						{t("hero.title.line1")} <br />
 						{t("hero.title.line2")}
 						<br />
-						<span className="text-[#1754cf] italic">{t("hero.title.highlight")}</span>
+						<span className="text-[#1754cf]">{t("hero.title.highlight")}</span>
 					</h1>
 
 					<p className="text-md md:text-lg text-gray-600 max-w-[500px] leading-relaxed">{t("hero.description")}</p>

@@ -155,5 +155,10 @@
             "fullName": "Full Name",
             "fullNamePlaceholder": "John Doe"
         }
+    },
+    "seo": {
+        "title": "Profitize | Align Teams, Reduce Risk & Scale Sustainable Growth",
+        "description": "Profitize helps leaders, teams, and global companies align strategy and execution to cut costs, reduce risk, and achieve sustainable growth through bilingual consulting, workshops, and execution support.",
+        "image": "/images/logo.png"
     }
 }

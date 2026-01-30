@@ -155,5 +155,10 @@
             "fullName": "氏名",
             "fullNamePlaceholder": "山田 太郎"
         }
+    },
+    "seo": {
+        "title": "Profitize｜チーム連携で実現する持続的な成長と収益最大化",
+        "description": "Profitizeは、戦略と実行を連動させ、コスト削減・リスク低減・持続的成長を実現するためのバイリンガルコンサルティングとワークショップを提供します。",
+        "image": "/images/logo.png"
     }
 }

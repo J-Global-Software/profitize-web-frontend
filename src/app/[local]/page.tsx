@@ -12,11 +12,11 @@ import { generatePageMetadata } from "@/src/utils/seo";
 import type { ResolvingMetadata } from "next";
 
 // app/[locale]/page.tsx
-/*
+
 export async function generateMetadata(props: { params: Promise<{ locale: AppLocale }> }, parent: ResolvingMetadata) {
-	return generatePageMetadata(props, parent, "seo");
+	return generatePageMetadata(props, parent, "homepage");
 }
-*/
+
 export default function GlobalConsulting() {
 	return (
 		<div className="bg-[#f6f6f8] text-[#111318] min-h-screen">

@@ -36,25 +36,25 @@ export async function generatePageMetadata(props: PageProps, parent: ResolvingMe
 				"x-default": `${SITE_URL}${pathname}`,
 			},
 		},
-		title: t("title"),
-		description: t("description"),
+		title: t("seo.title"),
+		description: t("seo.description"),
 
 		// Open Graph metadata
 		openGraph: {
-			title: t("title") || t("title"),
-			description: t("description") || t("description"),
+			title: t("seo.title") || t("seo.title"),
+			description: t("seo.description") || t("seo.description"),
 			type: "website",
-			url: t("title"), // optional, can fallback to current page URL
-			images: t("image") ? [{ url: t("image") }] : undefined,
+			url: t("seo.title"), // optional, can fallback to current page URL
+			images: t("seo.image") ? [{ url: t("seo.image") }] : undefined,
 			siteName: "Profitize.jp",
 		},
 
 		// Twitter card metadata
 		twitter: {
 			card: "summary_large_image",
-			title: t("title") || t("title"),
-			description: t("description") || t("description"),
-			images: t("image") ? [t("image")] : undefined,
+			title: t("seo.title") || t("seo.title"),
+			description: t("seo.description") || t("seo.description"),
+			images: t("seo.image") ? [t("seo.image")] : undefined,
 		},
 
 		icons: {

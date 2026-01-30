@@ -140,6 +140,22 @@
                 "detail": "Zoom • 19:30-21:00",
                 "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            },
+            "w3": {
+                "date": "3日",
+                "month": "3月",
+                "title": "英語・バイリンガル",
+                "detail": "Zoom • 15:00-16:00",
+                "cta": "席を予約する",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            },
+            "w4": {
+                "date": "6日",
+                "month": "3月",
+                "title": "日本語",
+                "detail": "Zoom • 15:00-16:00",
+                "cta": "席を予約する",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             }
         }
     },
@@ -160,5 +176,9 @@
         "title": "Profitize｜チーム連携で実現する持続的な成長と収益最大化",
         "description": "Profitizeは、戦略と実行を連動させ、コスト削減・リスク低減・持続的成長を実現するためのバイリンガルコンサルティングとワークショップを提供します。",
         "image": "/images/logo.png"
+    },
+    "clientLogos": {
+        "title": "確かな実績とグローバルな信頼",
+        "description": "30社以上の主要企業を支援してきたJ-Globalの15年にわたる実績を活かし、より高収益で効果的なビジネスプロセスを設計します。"
     }
 }

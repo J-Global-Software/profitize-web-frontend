@@ -1,7 +1,9 @@
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 export default function ClientLogos() {
 	const logos = [
+		{ name: "Hilton", src: "/images/logos/hiltonLogo.jpg" },
 		{ name: "Disney Resort", src: "/images/logos/Disneyresortlogo.jpg" },
 		{ name: "Fujitsu", src: "/images/logos/Fujitsulogo.jpg" },
 		{ name: "Hitachi", src: "/images/logos/hitachilogo.jpg" },
@@ -16,15 +18,32 @@ export default function ClientLogos() {
 		{ name: "Shane English School", src: "/images/logos/shanelogo.jpg" },
 	];
 
-	return (
-		<section className="py-20 border-t bg-white  border-gray-100">
-			<div className="max-w-[1200px] mx-auto px-6 text-center">
-				<p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-12">Empowering Global Market Leaders</p>
+	const t = useTranslations("homepage");
 
-				<div className="flex flex-wrap justify-center items-center gap-12 md:gap-16  hover:opacity-100 hover:grayscale-0 transition-all duration-700">
-					{logos.map((logo) => (
-						<div key={logo.name} className="relative w-24 h-16 md:w-32 md:h-20 flex items-center justify-center">
-							<Image src={logo.src} alt={`${logo.name} logo`} fill className="object-contain" sizes="(max-width: 768px) 96px, 128px" />
+	// duplicate logos for seamless loop
+	const loopLogos = [...logos, ...logos];
+
+	return (
+		<section className="py-20 border-t bg-white border-gray-100 overflow-hidden">
+			<div className="max-w-[1200px] mx-auto px-6 text-center">
+				<p
+					className="font-bold text-3xl
+				 text-gray-400 uppercase tracking-widest mb-12"
+				>
+					{t("clientLogos.title")}
+				</p>
+
+				<p className="text-lg text-gray-600 max-w-3xl mx-auto mb-16">{t("clientLogos.description")}</p>
+			</div>
+
+			{/* Marquee */}
+			<div className="relative w-full overflow-hidden">
+				<div className="flex w-max animate-logo-marquee hover:[animation-play-state:paused]">
+					{loopLogos.map((logo, index) => (
+						<div key={`${logo.name}-${index}`} className="mx-8 md:mx-12 flex items-center justify-center transition">
+							<div className="relative w-24 h-16 md:w-32 md:h-20">
+								<Image src={logo.src} alt={`${logo.name} logo`} fill className="object-contain" sizes="(max-width: 768px) 96px, 128px" />
+							</div>
 						</div>
 					))}
 				</div>

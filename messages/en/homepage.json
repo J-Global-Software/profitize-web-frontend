@@ -140,6 +140,22 @@
                 "detail": "Zoom • 7:30pm-9pm",
                 "cta": "Reserve Spot",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            },
+            "w3": {
+                "date": "3",
+                "month": "Mar",
+                "title": "English/Bilingual",
+                "detail": "Zoom • 3pm-4pm",
+                "cta": "Reserve Spot",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
+            },
+            "w4": {
+                "date": "6",
+                "month": "Mar",
+                "title": "Japanese",
+                "detail": "Zoom • 3pm-4pm",
+                "cta": "Reserve Spot",
+                "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             }
         }
     },
@@ -160,5 +176,9 @@
         "title": "Profitize | Align Teams, Reduce Risk & Scale Sustainable Growth",
         "description": "Profitize helps leaders, teams, and global companies align strategy and execution to cut costs, reduce risk, and achieve sustainable growth through bilingual consulting, workshops, and execution support.",
         "image": "/images/logo.png"
+    },
+    "clientLogos": {
+        "title": "Proven Expertise. Global Trust",
+        "description": "Leveraging our parent company J-Global’s 15-year history of supporting 30+ market leaders to design more profitable and effective business processes."
     }
 }

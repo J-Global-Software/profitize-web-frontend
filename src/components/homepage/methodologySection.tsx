@@ -39,10 +39,38 @@ export default function MethodologySection() {
 						const completed = step > index;
 
 						return (
-							<button key={i} onClick={() => setStep(index)} className={`group flex flex-col items-center py-4 px-1 transition-all duration-300 ${active ? "opacity-100 scale-105" : "opacity-40 hover:opacity-70"}`}>
-								<span className={`text-xs font-bold mb-1 tracking-wide ${active ? "text-primary" : "text-gray-500"}`}>{t("methodology.steps.labels.step")}</span>
-								<span className={`serif-header text-xl md:text-2xl font-black ${active ? "text-primary" : completed ? "text-prestige-navy" : "text-gray-400"}`}>{String(index).padStart(2, "0")}</span>
-								<span className={`mt-2 text-[11px] md:text-xs text-center leading-tight max-w-[90px] ${active ? "text-primary font-semibold" : "text-gray-500"}`}>{s.title}</span>
+							<button
+								key={i}
+								onClick={() => setStep(index)}
+								className={`
+		group relative flex flex-col items-center
+		py-4 px-2
+		rounded-lg
+		border transition-all duration-300 ease-out
+
+		${active ? "border-primary bg-primary/5 scale-[1.03]" : "border-transparent opacity-50 hover:opacity-80 hover:border-gray-200"}
+	`}
+							>
+								<span
+									className={`text-xs font-bold mb-1 tracking-wide transition-colors
+		${active ? "text-primary" : "text-gray-500"}`}
+								>
+									{t("methodology.steps.labels.step")}
+								</span>
+
+								<span
+									className={`serif-header text-xl md:text-2xl font-black transition-colors
+		${active ? "text-primary" : completed ? "text-prestige-navy" : "text-gray-400"}`}
+								>
+									{String(index).padStart(2, "0")}
+								</span>
+
+								<span
+									className={`mt-2 text-[11px] md:text-xs text-center leading-tight max-w-[90px] transition-colors
+		${active ? "text-primary font-semibold" : "text-gray-500"}`}
+								>
+									{s.title}
+								</span>
 							</button>
 						);
 					})}
@@ -73,7 +101,7 @@ function Step({ title, text, image }: { title: string; text: string; image: stri
 				<h3 className="serif-header text-3xl font-bold text-prestige-navy mb-4">{title}</h3>
 				<p className="text-lg text-gray-600 leading-relaxed max-w-2xl">{text}</p>
 			</div>
-			<div className="hidden md:block w-40 h-40 bg-gray-100 rounded-xl overflow-hidden opacity-80 flex-shrink-0 transition-transform duration-300 hover:scale-105">
+			<div className="hidden md:block w-40 h-40 bg-gray-50 rounded-xl overflow-hidden opacity-80 flex-shrink-0 transition-transform duration-300 hover:scale-105">
 				<Image src={image} alt={title} width={160} height={160} className="w-full h-full object-cover mix-blend-multiply" />
 			</div>
 		</div>

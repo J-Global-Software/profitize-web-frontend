@@ -28,12 +28,6 @@ export function WorkshopBlock({ t, workshop }: { t: any; workshop: Workshop }) {
 					<h3 className="text-lg font-semibold text-[#0e121b] truncate group-hover:text-[#1754cf] transition-colors">{t(`${base}.title`)}</h3>
 
 					{/* LANGUAGE BADGE */}
-					<span
-						className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px]
-						font-bold bg-[#1754cf]/10 text-[#1754cf] whitespace-nowrap"
-					>
-						{t(`${base}.title`)}
-					</span>
 				</div>
 
 				<p className="text-sm text-[#4e6797] font-medium">{t(`${base}.detail`)}</p>

@@ -162,7 +162,6 @@
     "footer": {
         "heading": "Let's Build Your Global Roadmap.",
         "contactPrefix": "Email",
-        "email": "jon.lynch@profitize.jp",
         "bottomText": "© 2026 Profitize Inc.",
         "privacy": "Privacy",
         "terms": "Terms",
@@ -170,7 +169,9 @@
         "form": {
             "fullName": "Full Name",
             "fullNamePlaceholder": "John Doe"
-        }
+        },
+        "phoneNumber": "Phone Number",
+        "email": "Email Address"
     },
     "seo": {
         "title": "Profitize | Align Teams, Reduce Risk & Scale Sustainable Growth",
@@ -180,5 +181,23 @@
     "clientLogos": {
         "title": "Proven Expertise. Global Trust",
         "description": "Leveraging our parent company J-Global’s 15-year history of supporting 30+ market leaders to design more profitable and effective business processes."
+    },
+    "contact": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "message": "Message",
+        "placeholder": {
+            "firstName": "John",
+            "lastName": "Doe",
+            "email": "john.doe@company.com",
+            "message": "Please describe your inquiry."
+        },
+        "submit": "Submit Inquiry",
+        "submitting": "Submitting…",
+        "toast": {
+            "success": "Success: Message submitted successfully.",
+            "error": "Error: Unable to submit message."
+        }
     }
 }

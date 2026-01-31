@@ -162,7 +162,6 @@
     "footer": {
         "heading": "グローバルな成長へのロードマップを共に描きましょう。",
         "contactPrefix": "メール",
-        "email": "jon.lynch@profitize.jp",
         "bottomText": "© 2026年 プロフィタイズ株式会社 。",
         "privacy": "プライバシーポリシー",
         "terms": "利用規約",
@@ -170,7 +169,9 @@
         "form": {
             "fullName": "氏名",
             "fullNamePlaceholder": "山田 太郎"
-        }
+        },
+        "phoneNumber": "電話番号",
+        "email": "メールアドレス"
     },
     "seo": {
         "title": "Profitize｜チーム連携で実現する持続的な成長と収益最大化",
@@ -180,5 +181,23 @@
     "clientLogos": {
         "title": "確かな実績とグローバルな信頼",
         "description": "30社以上の主要企業を支援してきたJ-Globalの15年にわたる実績を活かし、より高収益で効果的なビジネスプロセスを設計します。"
+    },
+    "contact": {
+        "firstName": "名",
+        "lastName": "姓",
+        "email": "メールアドレス",
+        "message": "お問い合わせ内容",
+        "placeholder": {
+            "firstName": "太郎",
+            "lastName": "山田",
+            "email": "taro.yamada@company.co.jp",
+            "message": "お問い合わせ内容をご記入ください。"
+        },
+        "submit": "送信",
+        "submitting": "送信中…",
+        "toast": {
+            "success": "送信が完了しました。",
+            "error": "送信に失敗しました。"
+        }
     }
 }

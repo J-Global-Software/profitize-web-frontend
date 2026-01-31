@@ -1,6 +1,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import "../globals.css";
 import { Roboto, Playfair_Display } from "next/font/google";
+import { Toaster } from "sonner";
 
 const roboto = Roboto({
 	subsets: ["latin"],
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			</head>
 			<body className={`${roboto.variable} ${playfair.variable} bg-background-light dark:bg-background-dark`}>
 				<NextIntlClientProvider>{children}</NextIntlClientProvider>
+				<Toaster richColors closeButton />
 			</body>
 		</html>
 	);

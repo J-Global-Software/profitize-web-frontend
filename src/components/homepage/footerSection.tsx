@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ContactForm } from "./contacts-section/contactForm";
 
 export default function Footer() {
 	const t = useTranslations("homepage");
@@ -11,26 +12,48 @@ export default function Footer() {
 				{/* ================= TOP ================= */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-20">
 					{/* Left */}
-					<div>
-						<h2 className="text-4xl font-black mb-8">{t("footer.heading")}</h2>
+					{/* Left */}
+					<div className="max-w-xl">
+						<h2 className="text-4xl font-black mb-6">{t("footer.heading")}</h2>
 
-						<div className="mt-5">
-							{t("footer.contactPrefix")}: <span className="text-blue-600 bold">{t("footer.email")}</span>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div className="flex flex-col gap-4 mt-10">
+								{/* Email */}
+								<a href={`mailto:jon.lynch@profitize.jp`} className="group flex items-center gap-4">
+									<div
+										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
+				group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+									>
+										<span className="material-symbols-outlined text-[22px]">mail</span>
+									</div>
+
+									<div>
+										<p className="text-xs uppercase tracking-widest text-gray-400 font-bold">{t("footer.email")}</p>
+										<p className="font-semibold text-gray-900 group-hover:text-[#1754cf] transition-colors">jon.lynch@profitize.jp</p>
+									</div>
+								</a>
+
+								{/* Phone */}
+								<a href={`tel:03-3281-4303`} className="group flex items-center gap-4">
+									<div
+										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
+				group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+									>
+										<span className="material-symbols-outlined text-[22px]">call</span>
+									</div>
+
+									<div>
+										<p className="text-xs uppercase tracking-widest text-gray-400 font-bold">{t("footer.phoneNumber")}</p>
+										<p className="font-semibold text-gray-900 group-hover:text-[#1754cf] transition-colors">03-3281-4303</p>
+									</div>
+								</a>
+							</div>
 						</div>
 					</div>
 
-					{/* Right – Form (commented out, static version if needed) */}
-					{/*
-          <div className="bg-gray-50 p-10 rounded-3xl">
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-widest opacity-60">{t("footer.form.fullName")}</label>
-                <input type="text" placeholder={t("footer.form.fullNamePlaceholder")} className="bg-white border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#1754cf]" />
-              </div>
-              ...
-            </form>
-          </div>
-          */}
+					{/* Right – Form */}
+
+					<ContactForm />
 				</div>
 
 				{/* ================= BOTTOM ================= */}

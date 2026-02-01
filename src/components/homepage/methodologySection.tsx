@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ICONS = ["search_check", "insights", "rocket_launch", "auto_fix_high", "trending_up", "diversity_3", "assessment"];
 
@@ -26,15 +27,15 @@ export default function MethodologySection() {
 	const imageSrc = `/images/${String(step + 1).padStart(2, "0")}.jpg`;
 
 	return (
-		<section id="methodology" className="pt-24 pb-10 bg-[#f6f6f8]">
+		<section id="methodology" className="pt-24 pb-10 bg-blue-50">
 			{/* Header */}
-			<div className="max-w-[1100px] mx-auto px-6 text-center mb-12">
+			<motion.div className="max-w-[1100px] mx-auto px-6 text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
 				<h2 className="text-4xl md:text-5xl font-black text-[#0e121b]">{t("methodology.header.title")}</h2>
 				<p className="mt-3 text-lg max-w-3xl mx-auto text-[#4e6797]">{t("methodology.header.description")}</p>
-			</div>
+			</motion.div>
 
 			{/* Card */}
-			<div className="max-w-[1200px] mx-auto px-6">
+			<motion.div className="max-w-[1200px] mx-auto px-6" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}>
 				<div className="bg-white rounded-3xl shadow-lg overflow-hidden flex flex-col lg:flex-row min-h-[400px]">
 					{/* Sidebar (DESKTOP ONLY) */}
 					<aside className="hidden lg:block w-[300px] pt-5 border-r border-[#e5e7eb] bg-[rgba(249,250,251,0.6)]">
@@ -43,20 +44,25 @@ export default function MethodologySection() {
 								const active = i === step;
 
 								return (
-									<button
+									<motion.button
 										key={i}
 										onClick={() => setStep(i)}
+										initial={{ opacity: 0, x: -12 }}
+										whileInView={{ opacity: 1, x: 0 }}
+										viewport={{ once: true, amount: 0.3 }}
+										transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
+										animate={active ? { backgroundColor: "#1754cf", color: "#ffffff" } : { backgroundColor: "transparent", color: "#6b7280" }}
 										className={`
-                      group flex items-center gap-3 px-4 py-2 rounded-xl text-md
-                      transition-all duration-300
-                      ${active ? "bg-[#1754cf] text-white font-bold shadow-lg shadow-[#1754cf]/25" : "text-[#6b7280] hover:bg-white hover:translate-x-1 hover:shadow-sm"}
-                    `}
+											group flex items-center gap-3 px-4 py-2 rounded-xl text-md
+											transition-transform duration-300
+											${active ? "font-bold shadow-lg shadow-[#1754cf]/25" : "hover:bg-white hover:translate-x-1 hover:shadow-sm"}
+										`}
 									>
 										<span className="material-symbols-outlined text-lg">{ICONS[i]}</span>
 										<span>
 											{String(i + 1).padStart(2, "0")}. {stepItem.title}
 										</span>
-									</button>
+									</motion.button>
 								);
 							})}
 						</nav>
@@ -79,30 +85,40 @@ export default function MethodologySection() {
 							</button>
 						</div>
 
-						{/* Animated content */}
-						<div key={step} className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center animate-[fadeSlide_0.4s_ease-out]">
-							{/* Text */}
-							<div className="max-w-xl">
-								<div className="inline-flex items-center gap-2 bg-[#1754cf]/10 text-[#1754cf] px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
-									{t("methodology.steps.labels.step")} {step + 1}
+						{/* Animated content swap */}
+						<AnimatePresence mode="wait">
+							<motion.div key={step} className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35, ease: "easeOut" }}>
+								{/* Text */}
+								<div className="max-w-xl">
+									<div className="inline-flex items-center gap-2 bg-[#1754cf]/10 text-[#1754cf] px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
+										{t("methodology.steps.labels.step")} {step + 1}
+									</div>
+
+									<h3 className="text-4xl font-bold text-[#0e121b] mb-4">{steps[step].title}</h3>
+
+									<p className="text-lg font-medium text-[#4e6797]">{steps[step].text}</p>
 								</div>
 
-								<h3 className="text-4xl font-bold text-[#0e121b] mb-4">{steps[step].title}</h3>
-
-								<p className="text-lg font-medium text-[#4e6797]">{steps[step].text}</p>
-							</div>
-
-							{/* Image */}
-							<div className="relative w-full h-[130px] lg:h-[200px] overflow-hidden">
-								<Image key={imageSrc} src={imageSrc} alt={steps[step].title} fill sizes="(max-width: 1024px) 100vw, 50vw" priority className="object-contain transition-all duration-700 ease-out scale-[1.02]" />
-							</div>
-						</div>
+								{/* Image */}
+								<div className="relative w-full h-[130px] lg:h-[200px] overflow-hidden">
+									<Image src={imageSrc} alt={steps[step].title} fill sizes="(max-width: 1024px) 100vw, 50vw" priority className="object-contain" />
+								</div>
+							</motion.div>
+						</AnimatePresence>
 
 						{/* Footer */}
 						<div className="mt-10 pt-6 border-t border-[#e5e7eb] flex items-center justify-between relative z-10">
 							<div className="flex gap-1">
 								{steps.map((_, i) => (
-									<div key={i} className={`w-4 h-1 rounded-full transition-all ${i === step ? "bg-[#1754cf] scale-x-110" : "bg-[#e5e7eb]"}`} />
+									<motion.div
+										key={i}
+										className="h-1 rounded-full bg-[#e5e7eb]"
+										animate={{
+											backgroundColor: i === step ? "#1754cf" : "#e5e7eb",
+											width: i === step ? "1.25rem" : "1rem",
+										}}
+										transition={{ duration: 0.3, ease: "easeOut" }}
+									/>
 								))}
 							</div>
 
@@ -112,21 +128,7 @@ export default function MethodologySection() {
 						</div>
 					</div>
 				</div>
-			</div>
-
-			{/* Animation */}
-			<style jsx>{`
-				@keyframes fadeSlide {
-					from {
-						opacity: 0;
-						transform: translateY(8px);
-					}
-					to {
-						opacity: 1;
-						transform: translateY(0);
-					}
-				}
-			`}</style>
+			</motion.div>
 		</section>
 	);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 import { ContactForm } from "./contacts-section/contactForm";
 
 export default function Footer() {
@@ -10,10 +11,24 @@ export default function Footer() {
 		<footer id="contact" className="bg-white border-t border-gray-100 pt-24 pb-12">
 			<div className="max-w-[1200px] mx-auto px-6">
 				{/* ================= TOP ================= */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-20">
+				<motion.div
+					className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-20"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, amount: 0.25 }}
+					variants={{
+						hidden: {},
+						visible: { transition: { staggerChildren: 0.15 } },
+					}}
+				>
 					{/* Left */}
-					{/* Left */}
-					<div className="max-w-xl">
+					<motion.div
+						className="max-w-xl"
+						variants={{
+							hidden: { opacity: 0, x: -24 },
+							visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
+						}}
+					>
 						<h2 className="text-4xl font-black mb-6">{t("footer.heading")}</h2>
 
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -22,7 +37,7 @@ export default function Footer() {
 								<a href={`mailto:jon.lynch@profitize.jp`} className="group flex items-center gap-4">
 									<div
 										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
-				group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+											group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
 									>
 										<span className="material-symbols-outlined text-[22px]">mail</span>
 									</div>
@@ -37,7 +52,7 @@ export default function Footer() {
 								<a href={`tel:03-3281-4303`} className="group flex items-center gap-4">
 									<div
 										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
-				group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+											group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
 									>
 										<span className="material-symbols-outlined text-[22px]">call</span>
 									</div>
@@ -49,15 +64,21 @@ export default function Footer() {
 								</a>
 							</div>
 						</div>
-					</div>
+					</motion.div>
 
 					{/* Right – Form */}
-
-					<ContactForm />
-				</div>
+					<motion.div
+						variants={{
+							hidden: { opacity: 0, x: 24 },
+							visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
+						}}
+					>
+						<ContactForm />
+					</motion.div>
+				</motion.div>
 
 				{/* ================= BOTTOM ================= */}
-				<div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8">
+				<motion.div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.4, ease: "easeOut" }}>
 					<div className="flex items-center gap-2">
 						<p className="text-xs font-medium text-gray-400">{t("footer.bottomText")}</p>
 					</div>
@@ -73,7 +94,7 @@ export default function Footer() {
 							{t("footer.ethics")}
 						</a>
 					</div>
-				</div>
+				</motion.div>
 			</div>
 		</footer>
 	);

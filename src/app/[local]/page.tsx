@@ -10,6 +10,7 @@ import ClientLogos from "../../components/homepage/clientLogosSection";
 import { AppLocale } from "@/src/i18n/config";
 import { generatePageMetadata } from "@/src/utils/seo";
 import type { ResolvingMetadata } from "next";
+import ProfitizeCompanySection from "@/src/components/homepage/profitizeCompany";
 
 // app/[locale]/page.tsx
 
@@ -19,7 +20,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: AppLoc
 
 export default function GlobalConsulting() {
 	return (
-		<div className="bg-[#f6f6f8] text-[#111318] min-h-screen">
+		<div className="bg-[#f4f9ff] text-[#111318] min-h-screen">
 			{/* Header */}
 			<Header />
 
@@ -35,8 +36,9 @@ export default function GlobalConsulting() {
 
 				{/* Industries */}
 				<Industries />
-
 				{/* Services 
+				<ProfitizeCompanySection />
+				
 				<Services />
 				*/}
 				{/* Pricing 

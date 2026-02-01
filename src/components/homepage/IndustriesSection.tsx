@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 
 const INDUSTRIES = [
 	{ key: "advertising", icon: "campaign" },
@@ -18,10 +19,10 @@ export default function Industries() {
 	const t = useTranslations("homepage");
 
 	return (
-		<section id="industries" className="bg-[#f6f6f8] py-8 sm:py-12">
+		<section id="industries" className="bg-blue-50 py-8 sm:py-12">
 			<div className="max-w-[1120px] mx-auto px-4 sm:px-6">
 				{/* ================= Header ================= */}
-				<div className="flex flex-col items-center text-center mb-12 sm:mb-16">
+				<motion.div className="flex flex-col items-center text-center mb-12 sm:mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
 					<h2
 						className="
 						text-3xl sm:text-[42px]
@@ -45,18 +46,26 @@ export default function Industries() {
 					>
 						{t("industries.header.description")}
 					</p>
-				</div>
+				</motion.div>
 
 				{/* ================= Pills Grid ================= */}
-				<div
-					className="
-					flex flex-wrap justify-center
-					gap-3 sm:gap-4
-				"
+				<motion.div
+					className="flex flex-wrap justify-center gap-3 sm:gap-4"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, amount: 0.25 }}
+					variants={{
+						hidden: {},
+						visible: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
+					}}
 				>
 					{INDUSTRIES.map(({ key, icon }) => (
-						<div
+						<motion.div
 							key={key}
+							variants={{
+								hidden: { opacity: 0, y: 16, scale: 0.92 },
+								visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: "easeOut" } },
+							}}
 							className="
 								group
 								flex items-center gap-2 sm:gap-3
@@ -95,9 +104,9 @@ export default function Industries() {
 							>
 								{t(`industries.list.${key}`)}
 							</span>
-						</div>
+						</motion.div>
 					))}
-				</div>
+				</motion.div>
 			</div>
 		</section>
 	);

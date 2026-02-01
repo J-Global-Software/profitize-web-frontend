@@ -1,3 +1,5 @@
+"use client";
+
 type Workshop = {
 	key: string;
 };
@@ -26,8 +28,6 @@ export function WorkshopBlock({ t, workshop }: { t: any; workshop: Workshop }) {
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-3 mb-1">
 					<h3 className="text-lg font-semibold text-[#0e121b] truncate group-hover:text-[#1754cf] transition-colors">{t(`${base}.title`)}</h3>
-
-					{/* LANGUAGE BADGE */}
 				</div>
 
 				<p className="text-sm text-[#4e6797] font-medium">{t(`${base}.detail`)}</p>

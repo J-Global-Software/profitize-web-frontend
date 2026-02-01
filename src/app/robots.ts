@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 // Locales supported
-const locales = ["en", "ja"];
+const locales = ["en", ""];
 
 export default function robots(): MetadataRoute.Robots {
 	const disallowManage = locales.flatMap((locale) => [

@@ -257,7 +257,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			})} JST</span></div>
         </div>
 
-        <p style="margin-top:24px;">— J Global Biz School Team</p>
+        <p style="margin-top:24px;">— profitize.jp Team</p>
       </div>
     </div>
   </div>

@@ -140,7 +140,7 @@ export default function FreeConsultationClient() {
 		<div className="min-h-screen bg-[#fbfbfb] flex items-center justify-center px-6 py-12">
 			<div className="max-w-[1100px] w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
 				{/* Header */}
-				<div className="px-10 py-8 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+				<div className="px-5 md:px-10 py-8 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
 					<h1 className="text-2xl md:text-3xl font-black">{t("booking.title")}</h1>
 					<div className="flex gap-6">
 						<StepIndicator count={1} active={step === 1} label={t("booking.step1")} onClick={() => setStep(1)} />
@@ -158,7 +158,7 @@ export default function FreeConsultationClient() {
 				{/* STEP 1: Calendar & Time Selection */}
 				{step === 1 && (
 					<div className="grid grid-cols-1 md:grid-cols-12 min-h-[460px]">
-						<div className="md:col-span-6 p-10 border-r border-gray-100">
+						<div className="md:col-span-6 p-5 md:p-10 border-r border-gray-100">
 							<div className="flex items-center justify-between mb-8">
 								<h2 className="text-2xl font-bold capitalize">{monthLabel}</h2>
 								<div className="flex gap-2">
@@ -204,12 +204,12 @@ export default function FreeConsultationClient() {
 						</div>
 
 						<div className="md:col-span-6 bg-[#f8f9fa] flex flex-col">
-							<div className="p-10 pb-4">
+							<div className="p-5 md:p-10 pb-4">
 								<p className="text-[10px] font-black uppercase tracking-widest text-[#1754cf]">{selectedDate ? format(selectedDate, "PPPP", { locale: dateFnsLocale }) : t("manage.selectDateShort")}</p>
 								<h3 className="text-xl font-bold">{t("manage.availableSlots")}</h3>
 							</div>
 
-							<div className="px-10 grid grid-cols-2 gap-3 min-h-[200px]">
+							<div className="px-5 md:px-10 grid grid-cols-2 gap-3 min-h-[200px]">
 								{loadingSlots ? (
 									<div className="col-span-2 flex justify-center items-center">
 										<div className="w-8 h-8 border-4 border-[#1754cf]/30 border-t-[#1754cf] rounded-full animate-spin" />
@@ -265,7 +265,7 @@ export default function FreeConsultationClient() {
 								</div>
 							)}
 
-							<div className="mt-auto p-10 pt-6 border-t border-gray-100 bg-white/60">
+							<div className="mt-auto p-5 md:p-10 pt-6 border-t border-gray-100 bg-white/60">
 								<button disabled={!selectedDate || !selectedTime} onClick={() => setStep(2)} className="w-full bg-[#1754cf] text-white font-bold py-4 rounded-xl shadow-lg disabled:opacity-30">
 									{t("booking.continue")}
 								</button>
@@ -277,7 +277,7 @@ export default function FreeConsultationClient() {
 				{/* STEP 2: Summary & User Details */}
 				{step === 2 && (
 					<div className="grid grid-cols-1 md:grid-cols-12 min-h-[460px]">
-						<div className="md:col-span-4 bg-[#f8f9fa] p-10 flex flex-col gap-6">
+						<div className="md:col-span-4 bg-[#f8f9fa] p-5 md:p-10 flex flex-col gap-6">
 							<h2 className="text-2xl font-bold">{t("booking.summary")}</h2>
 							<div className="flex flex-col gap-4 mt-4">
 								<div className="flex justify-between text-sm font-bold">
@@ -296,7 +296,7 @@ export default function FreeConsultationClient() {
 							</div>
 						</div>
 
-						<div className="md:col-span-8 bg-white p-10 flex flex-col justify-between">
+						<div className="md:col-span-8 bg-white p-5 md:p-10 flex flex-col justify-between">
 							<div>
 								<h2 className="text-2xl font-black mb-6">{t("booking.details")}</h2>
 								<form className="grid gap-6" onSubmit={(e) => e.preventDefault()}>

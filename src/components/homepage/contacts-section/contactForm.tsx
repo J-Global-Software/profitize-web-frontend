@@ -59,7 +59,7 @@ export function ContactForm() {
 	}
 
 	return (
-		<div className="bg-gray-50 p-10 rounded-3xl">
+		<div className="bg-gray-50 p-5 md:p-10 rounded-3xl">
 			<form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<div className="flex flex-col gap-2">
 					<label className="text-xs font-bold uppercase tracking-widest opacity-60">{t("firstName")}</label>

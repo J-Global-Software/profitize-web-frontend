@@ -5,12 +5,19 @@ import { query } from "@/src/utils/neon";
 import { deleteCalendarEvent } from "@/src/utils/google-calendar";
 import { deleteZoomMeeting } from "@/src/utils/zoom";
 
+// HTML escape utility
+function escapeHtml(str: string) {
+	return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Safe interpolate for templates
+function interpolate(template: string, values: Record<string, string>) {
+	return template.replace(/\{(\w+)\}/g, (_, key) => escapeHtml(values[key] ?? ""));
+}
+
 export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	const locale = req.headers.get("x-locale") || "ja";
 	const messages = await loadServerMessages(locale);
-	function interpolate(template: string, values: Record<string, string>) {
-		return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
-	}
 
 	try {
 		const { token } = await context.params;
@@ -116,7 +123,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		await resend.emails.send({
 			from: process.env.FROM_EMAIL || "",
 			to: booking.email,
-			subject: messages.server.email.cancelledSubject, // pulled from JSON
+			subject: messages.server.email.cancelledSubject,
 			html: `
 <!DOCTYPE html>
 <html lang="${locale}">
@@ -125,87 +132,43 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
-
-<!-- Wrapper -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
-  <tr>
-    <td align="center">
-      <!-- Container -->
-      <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
-        
-        <!-- Header -->
-        <tr>
-          <td style="padding:48px; text-align:center;">
-            <h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${messages.server.email.cancelledHeader}</h1>
-          </td>
-        </tr>
-
-        <!-- Content -->
-        <tr>
-          <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? booking.last_name : booking.first_name })}</p>
-            <p>${messages.server.email.cancelledIntro}</p>
-
-            <!-- Detail Card -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
-              <tr>
-                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px;">${messages.server.email.serviceBooked}</td>
-                <td style="font-size:15px; font-weight:600; color:#1e293b;">${messages.server.email.serviceName}</td>
-              </tr>
-              <tr>
-                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${messages.server.email.staff}</td>
-                <td style="font-size:15px; font-weight:600; color:#1e293b;">${messages.server.email.staffName}</td>
-              </tr>
-              <tr>
-                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${messages.server.email.platform}</td>
-                <td style="font-size:15px; font-weight:600; color:#1e293b;">${messages.server.email.platformValue}</td>
-              </tr>
-              <tr>
-                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${messages.server.email.dateTimeLabel}</td>
-                <td style="font-size:15px; font-weight:600; color:#1e293b;">${new Date(booking.event_date).toLocaleString(locale === "ja" ? "ja-JP" : "en-US", { timeZone: "Asia/Tokyo", dateStyle: "long", timeStyle: "short" })} JST</td>
-              </tr>
-            </table>
-
-            <!-- Cancelled Action -->
-            <p>${messages.server.email.cancelledAction}</p>
-
-            <!-- Support Email -->
-            <p style="margin-top:32px; font-size:13px; line-height:1.6; color:#64748b;">
-              <a href="mailto:${messages.server.email.supportEmail}" style="color:#1e40af; font-weight:600; text-decoration:none;">${messages.server.email.supportEmail}</a>
-            </p>
-
-            <p style="margin-top:32px;">— ${messages.server.email.teamName}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Footer -->
-      <table width="540" cellpadding="0" cellspacing="0" border="0" style="margin:40px auto; text-align:center; font-family:Arial, sans-serif; font-size:12px; color:#94a3b8;">
-        <tr>
-          <td>
-            <img src="https://profitize.jp/images/logo.png" alt="Profitize" style="max-width:120px; margin-bottom:24px; opacity:0.9; display:block; margin-left:auto; margin-right:auto;">
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-bottom:16px;">
-            <a href="${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}" style="color:#94a3b8; text-decoration:none; margin-right:15px;">${messages.server.email.footerWebsite}</a>
-            <a href="${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}" style="color:#94a3b8; text-decoration:none;">${messages.server.email.footerPrivacy}</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:11px; color:#cbd5e1; line-height:1.6;">
-            &copy; 2026 Profitize Inc.<br>
-            ${messages.server.email.footerCopyright}
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
+<tr><td align="center">
+<table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
+<tr><td style="padding:48px; text-align:center;">
+<h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${escapeHtml(messages.server.email.cancelledHeader)}</h1>
+</td></tr>
+<tr><td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
+<p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? booking.last_name : booking.first_name })}</p>
+<p>${escapeHtml(messages.server.email.cancelledIntro)}</p>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
+<tr>
+<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px;">${escapeHtml(messages.server.email.serviceBooked)}</td>
+<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.serviceName)}</td>
+</tr>
+<tr>
+<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.staff)}</td>
+<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.staffName)}</td>
+</tr>
+<tr>
+<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.platform)}</td>
+<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.platformValue)}</td>
+</tr>
+<tr>
+<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.dateTimeLabel)}</td>
+<td style="font-size:15px; font-weight:600; color:#1e293b;">${new Date(booking.event_date).toLocaleString(locale === "ja" ? "ja-JP" : "en-US", { timeZone: "Asia/Tokyo", dateStyle: "long", timeStyle: "short" })} JST</td>
+</tr>
 </table>
-
+<p>${escapeHtml(messages.server.email.cancelledAction)}</p>
+<p style="margin-top:32px; font-size:13px; line-height:1.6; color:#64748b;">
+<a href="mailto:${escapeHtml(messages.server.email.supportEmail)}" style="color:#1e40af; font-weight:600; text-decoration:none;">${escapeHtml(messages.server.email.supportEmail)}</a>
+</p>
+<p style="margin-top:32px;">— ${escapeHtml(messages.server.email.teamName)}</p>
+</td></tr>
+</table>
+</td></tr></table>
 </body>
 </html>
-
 `,
 		});
 
@@ -217,50 +180,11 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			html: `
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  body { margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
-  .wrapper { width:100%; table-layout:fixed; padding:40px 0; background-color:#f8fafc; }
-  .container { max-width:540px; margin:0 auto; background-color:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden; }
-  .header { padding:32px 32px 24px 32px; text-align:center; }
-  h2 { margin:0; font-size:20px; font-weight:700; color:#0f172a; }
-  .content { padding:0 32px 32px 32px; font-size:15px; color:#475569; line-height:1.6; }
-  .detail-card { background-color:#f8fafc; border-radius:12px; padding:20px; border:1px solid #f1f5f9; margin-top:20px; }
-  .row { margin-bottom:12px; }
-  .label { font-weight:600; color:#94a3b8; margin-right:6px; text-transform:uppercase; font-size:12px; }
-  .value { font-weight:500; color:#1e293b; }
-  @media screen and (max-width:600px) {
-    .wrapper { padding:20px 0; }
-    .header, .content { padding:24px; }
-  }
-</style>
-</head>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
 <body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <h2>Consultation Session Cancelled</h2>
-      </div>
-
-      <div class="content">
-        <p>The following session has been cancelled:</p>
-
-        <div class="detail-card">
-          <div class="row"><span class="label">Name:</span><span class="value">${booking.first_name} ${booking.last_name}</span></div>
-          <div class="row"><span class="label">Email:</span><span class="value">${booking.email}</span></div>
-          <div class="row"><span class="label">Date:</span><span class="value">${new Date(booking.event_date).toLocaleString("en-US", {
-				timeZone: "Asia/Tokyo",
-				dateStyle: "long",
-				timeStyle: "short",
-			})} JST</span></div>
-        </div>
-
-        <p style="margin-top:24px;">— profitize.jp Team</p>
-      </div>
-    </div>
-  </div>
+<p>Name: ${escapeHtml(booking.first_name)} ${escapeHtml(booking.last_name)}</p>
+<p>Email: ${escapeHtml(booking.email)}</p>
+<p>Date: ${new Date(booking.event_date).toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "long", timeStyle: "short" })} JST</p>
 </body>
 </html>
 `,

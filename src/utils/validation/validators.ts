@@ -47,7 +47,7 @@ export const Validators = {
 
 		const email = value.trim();
 
-		const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+		const isValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
 
 		if (!isValid) {
 			throw new ValidationError(`Invalid ${field.toLowerCase()}`);

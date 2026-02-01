@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Validators } from "@/src/utils/validation/validators";
+import { sanitizeBookingInputs } from "@/src/utils/validation/sanitize"; // ← NEW
 import { getOrCreateSession } from "@/src/utils/db/getOrCreateSession";
 import { query } from "@/src/utils/neon";
 import { isValidationError } from "@/src/utils/validation/ErrorValidator";
@@ -37,7 +38,9 @@ export async function POST(req: NextRequest) {
 		const body = await req.json();
 		const { date, time, firstName, lastName, email, phone, message } = body;
 
-		// Validation
+		// ---------------------------------------------------------------
+		// Validation (runs on raw input — same as before)
+		// ---------------------------------------------------------------
 		Validators.required(date, "Date");
 		Validators.required(time, "Time");
 		Validators.required(firstName, "First Name");
@@ -52,7 +55,24 @@ export async function POST(req: NextRequest) {
 			Validators.maxLength(message, 2000, "Message");
 		}
 
+		// ---------------------------------------------------------------
+		// Sanitization — runs once, right after validation passes.
+		//   plain.* → DB, Zoom topic, calendar description, plain-text email
+		//   html.*  → HTML email templates
+		// ---------------------------------------------------------------
+		const { plain, html } = sanitizeBookingInputs({
+			firstName,
+			lastName,
+			email,
+			phone: phone || "",
+			message: message || "",
+			date,
+			time,
+		});
+
+		// ---------------------------------------------------------------
 		// Google Calendar Auth
+		// ---------------------------------------------------------------
 		const auth = new google.auth.JWT({
 			email: process.env.GOOGLE_SERVICE_CLIENT_EMAIL,
 			key: process.env.GOOGLE_SERVICE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
@@ -60,11 +80,15 @@ export async function POST(req: NextRequest) {
 		});
 		const calendar = google.calendar({ version: "v3", auth });
 
+		// ---------------------------------------------------------------
 		// Event timing
-		const start = new Date(`${date}T${time}:00+09:00`);
+		// ---------------------------------------------------------------
+		const start = new Date(`${plain.date}T${plain.time}:00+09:00`);
 		const end = new Date(start.getTime() + 30 * 60 * 1000);
 
+		// ---------------------------------------------------------------
 		// Check conflicts
+		// ---------------------------------------------------------------
 		const existing = await calendar.events.list({
 			calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
 			timeMin: start.toISOString(),
@@ -84,23 +108,39 @@ export async function POST(req: NextRequest) {
 			return new Response(JSON.stringify({ error: "This time slot is already booked." }), { status: 409 });
 		}
 
-		// Create Zoom meeting
-		const startJST = new Date(`${date}T${time}:00+09:00`);
-		const startUTC = new Date(startJST.getTime() - startJST.getTimezoneOffset() * 60000);
-		const { meeting, registrantLinks } = await createZoomMeeting(`(Profitize) Free Consultation X ${firstName} ${lastName}`, startUTC, 30, [{ email, firstName, lastName }]);
+		// ---------------------------------------------------------------
+		// Create Zoom meeting   ← plain.* (topic is plain text, not HTML)
+		// ---------------------------------------------------------------
+		const zoomTopic = `(Profitize) Free Consultation X ${plain.firstName} ${plain.lastName}`;
+		const { meeting, registrantLinks } = await createZoomMeeting(
+			zoomTopic,
+			start, // reuse the already-computed start (removed redundant startJST/startUTC)
+			30,
+			[{ email: plain.email, firstName: plain.firstName, lastName: plain.lastName }],
+		);
 
-		const userZoomLink = registrantLinks[email];
+		const userZoomLink = registrantLinks[plain.email];
 
-		// Insert event into calendar
+		// ---------------------------------------------------------------
+		// Insert Google Calendar event   ← plain.* (description is plain text)
+		// ---------------------------------------------------------------
 		const event = {
-			summary: "(Profitize) Free Consultation X " + firstName + " " + lastName,
-			description: `Free consultation session with ${firstName} ${lastName}
-Email: ${email}
-${phone ? `Phone: ${phone}\n` : ""}${message ? `Message: ${message}\n` : ""}
+			summary: zoomTopic,
+			description: `Free consultation session with ${plain.firstName} ${plain.lastName}
+Email: ${plain.email}
+${plain.phone ? `Phone: ${plain.phone}\n` : ""}${plain.message ? `Message: ${plain.message}\n` : ""}
 Zoom link: ${userZoomLink || ""}`,
 			start: { dateTime: start.toISOString(), timeZone: "Asia/Tokyo" },
 			end: { dateTime: end.toISOString(), timeZone: "Asia/Tokyo" },
-			extendedProperties: { private: { firstName, lastName, email, phone: phone || "", message: message || "" } },
+			extendedProperties: {
+				private: {
+					firstName: plain.firstName,
+					lastName: plain.lastName,
+					email: plain.email,
+					phone: plain.phone,
+					message: plain.message,
+				},
+			},
 		};
 
 		const responseEvent = await calendar.events.insert({
@@ -110,32 +150,24 @@ Zoom link: ${userZoomLink || ""}`,
 
 		const { sessionId } = await getOrCreateSession(req);
 
-		// Insert booking with new columns
+		// ---------------------------------------------------------------
+		// Insert booking into DB   ← plain.* (parameterized queries are
+		//   already SQL-safe, but plain-sanitized values are still cleaner)
+		// ---------------------------------------------------------------
 		const bookingResult = await query<{ id: string; cancellation_token: string }>(
 			`INSERT INTO profitize.bookings
-  (session_id, first_name, last_name, email, phone_number, message, event_date, 
+  (session_id, first_name, last_name, email, phone_number, message, event_date,
    google_calendar_event_id, zoom_meeting_id, zoom_join_url, status, created_at)
   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
   RETURNING id, cancellation_token`,
-			[
-				sessionId,
-				firstName,
-				lastName,
-				email,
-				phone || "",
-				message || "",
-				start.toISOString(),
-				responseEvent.data.id, // $8 - google_calendar_event_id
-				String(meeting.id), // $9 - zoom_meeting_id
-				userZoomLink, // $10 - zoom_join_url
-				"confirmed", // $11 - status
-				new Date().toISOString(), // $12 - created_at
-			],
+			[sessionId, plain.firstName, plain.lastName, plain.email, plain.phone, plain.message, start.toISOString(), responseEvent.data.id, String(meeting.id), userZoomLink, "confirmed", new Date().toISOString()],
 		);
 
 		const cancellationToken = bookingResult.rows[0].cancellation_token;
 
-		// Send emails
+		// ---------------------------------------------------------------
+		// Build shared email assets
+		// ---------------------------------------------------------------
 		const resend = new Resend(process.env.RESEND_API_KEY);
 
 		const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
@@ -155,42 +187,22 @@ Zoom link: ${userZoomLink || ""}`,
 			location: "Online",
 		});
 
-		// Management URL for reschedule/cancel
 		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${cancellationToken}`;
 
-		const text =
-			locale === "ja"
-				? `${interpolate(messages.server.email.hi, { name: lastName })}
+		// ---------------------------------------------------------------
+		// Plain-text email body   ← plain.* (no HTML parsing here)
+		// ---------------------------------------------------------------
+		const greetingName = locale === "ja" ? plain.lastName : plain.firstName;
+
+		const text = `${interpolate(messages.server.email.hi, { name: greetingName })}
 
 ${messages.server.email.thanks}
-${interpolate(messages.server.email.seeYou, { date, time })}
+${interpolate(messages.server.email.seeYou, { date: plain.date, time: plain.time })}
 
 ${messages.server.email.serviceBooked}: ${messages.server.email.serviceName}
 ${messages.server.email.staff}: ${messages.server.email.staffName}
 ${messages.server.email.platform}: ${messages.server.email.platformValue}
-${messages.server.email.dateTimeLabel}: ${date} ${time}
-
-Zoom link: ${userZoomLink || ""}
-${messages.server.email.rescheduleText}: ${managementUrl}
-
-${messages.server.email.calendar.addToCalendar}
-Google Calendar: ${calendarUrl}
-Outlook / Teams: ${outlookUrl}
-
-${messages.server.email.contact}
-Email: ${messages.server.email.supportEmail}
-
-${messages.server.email.footerWebsite}: ${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}
-${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}`
-				: `${interpolate(messages.server.email.hi, { name: firstName })}
-
-${messages.server.email.thanks}
-${interpolate(messages.server.email.seeYou, { date, time })}
-
-${messages.server.email.serviceBooked}: ${messages.server.email.serviceName}
-${messages.server.email.staff}: ${messages.server.email.staffName}
-${messages.server.email.platform}: ${messages.server.email.platformValue}
-${messages.server.email.dateTimeLabel}: ${date} ${time}
+${messages.server.email.dateTimeLabel}: ${plain.date} ${plain.time}
 
 Zoom link: ${userZoomLink || ""}
 ${messages.server.email.rescheduleText}: ${managementUrl}
@@ -205,10 +217,15 @@ Email: ${messages.server.email.supportEmail}
 ${messages.server.email.footerWebsite}: ${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}
 ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}`;
 
-		// Email to user
+		// ---------------------------------------------------------------
+		// User confirmation HTML email   ← html.* everywhere a user field
+		//   is interpolated into the template
+		// ---------------------------------------------------------------
+		const htmlGreetingName = locale === "ja" ? html.lastName : html.firstName;
+
 		await resend.emails.send({
 			from: process.env.FROM_EMAIL || "",
-			to: email,
+			to: plain.email, // `to` is a header field, not rendered as HTML
 			subject: messages.server.email.subject,
 			text: text,
 			html: `
@@ -240,9 +257,9 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
           <!-- Content -->
           <tr>
             <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-              ${interpolate(messages.server.email.hi, { name: locale === "ja" ? lastName : firstName })}<br><br>
+              ${interpolate(messages.server.email.hi, { name: htmlGreetingName })}<br><br>
               ${messages.server.email.thanks}<br>
-              ${interpolate(messages.server.email.seeYou, { date, time })}
+              ${interpolate(messages.server.email.seeYou, { date: html.date, time: html.time })}
 
               <!-- Detail Card -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
@@ -260,22 +277,21 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
                 </tr>
                 <tr>
                   <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${messages.server.email.dateTimeLabel}</td>
-                  <td style="font-size:15px; font-weight:600; color:#1e293b;">${date} ${time}</td>
+                  <td style="font-size:15px; font-weight:600; color:#1e293b;">${html.date} ${html.time}</td>
                 </tr>
               </table>
 
               <!-- Zoom Button -->
-             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0; padding:0;">
-  <tr>
-    <td align="center" style="padding:20px 0;">
-      <a href="${userZoomLink || ""}" 
-         style="display:inline-block; background-color:#0f172a; color:#ffffff !important; text-decoration:none !important; padding:13px 24px; border-radius:10px; font-weight:600; font-size:15px;">
-         ${messages.server.email.zoomLink}
-      </a>
-    </td>
-  </tr>
-</table>
-
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0; padding:0;">
+                <tr>
+                  <td align="center" style="padding:20px 0;">
+                    <a href="${userZoomLink || ""}"
+                       style="display:inline-block; background-color:#0f172a; color:#ffffff !important; text-decoration:none !important; padding:13px 24px; border-radius:10px; font-weight:600; font-size:15px;">
+                       ${messages.server.email.zoomLink}
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
               <a href="${managementUrl}" style="display:block; text-align:center; margin-top:24px; font-size:13px; color:#64748b; text-decoration:none; font-weight:500; border-bottom:1px solid transparent;">
                 ${messages.server.email.rescheduleText}
@@ -326,7 +342,6 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
 
 </body>
 </html>
-
 `,
 			attachments: [
 				{
@@ -337,7 +352,9 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
 			],
 		});
 
-		// Email to lecturer
+		// ---------------------------------------------------------------
+		// Lecturer notification HTML   ← html.* for all user fields
+		// ---------------------------------------------------------------
 		await resend.emails.send({
 			from: process.env.FROM_EMAIL || "",
 			to: process.env.LECTURER_EMAIL || "",
@@ -376,12 +393,12 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
         <p>A new user has booked a free consultation session.</p>
 
         <div class="detail-card">
-          <div class="row"><span class="label">Name:</span><span class="value">${firstName} ${lastName || ""}</span></div>
-          <div class="row"><span class="label">Email:</span><span class="value">${email}</span></div>
-          ${phone?.trim() ? `<div class="row"><span class="label">Phone Number:</span><span class="value">${phone}</span></div>` : ""}
-          ${message?.trim() ? `<div class="row"><span class="label">Message:</span><span class="value">${message}</span></div>` : ""}
-          <div class="row"><span class="label">Date:</span><span class="value">${date}</span></div>
-          <div class="row"><span class="label">Time:</span><span class="value">${time} (JST)</span></div>
+          <div class="row"><span class="label">Name:</span><span class="value">${html.firstName} ${html.lastName}</span></div>
+          <div class="row"><span class="label">Email:</span><span class="value">${html.email}</span></div>
+          ${plain.phone.trim() ? `<div class="row"><span class="label">Phone Number:</span><span class="value">${html.phone}</span></div>` : ""}
+          ${plain.message.trim() ? `<div class="row"><span class="label">Message:</span><span class="value">${html.message}</span></div>` : ""}
+          <div class="row"><span class="label">Date:</span><span class="value">${html.date}</span></div>
+          <div class="row"><span class="label">Time:</span><span class="value">${html.time} (JST)</span></div>
         </div>
 
         <p style="margin-top:24px;">You can find the event details and the Zoom link in the calendar event description.</p>

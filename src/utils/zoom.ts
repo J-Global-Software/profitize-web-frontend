@@ -110,28 +110,36 @@ export async function createZoomMeeting(topic: string, startTime: Date, duration
 	// 2️⃣ Add registrants and collect their join URLs
 	const registrantLinks: Record<string, string> = {};
 
-	for (const r of registrants) {
-		const regRes = await fetch(`https://api.zoom.us/v2/meetings/${meeting.id}/registrants`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				email: r.email,
-				first_name: r.firstName,
-				last_name: r.lastName,
+	if (registrants.length > 0) {
+		await Promise.all(
+			registrants.map(async (r) => {
+				try {
+					const regRes = await fetch(`https://api.zoom.us/v2/meetings/${meeting.id}/registrants`, {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							email: r.email,
+							first_name: r.firstName,
+							last_name: r.lastName,
+						}),
+					});
+
+					if (!regRes.ok) {
+						const text = await regRes.text();
+						console.warn(`Failed to add registrant ${r.email}: ${regRes.status} ${text}`);
+						return;
+					}
+
+					const regData = (await regRes.json()) as ZoomRegistrantResponse;
+					registrantLinks[r.email] = regData.join_url;
+				} catch (err) {
+					console.error(`Error adding registrant ${r.email}:`, err);
+				}
 			}),
-		});
-
-		if (!regRes.ok) {
-			const text = await regRes.text();
-			console.warn(`Failed to add registrant ${r.email}: ${regRes.status} ${text}`);
-			continue;
-		}
-
-		const regData = (await regRes.json()) as ZoomRegistrantResponse;
-		registrantLinks[r.email] = regData.join_url;
+		);
 	}
 
 	return { meeting, registrantLinks };

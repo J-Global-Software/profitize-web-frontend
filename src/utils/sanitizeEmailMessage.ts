@@ -8,3 +8,11 @@ export function sanitizeEmailMessage(message: string) {
 		disallowedTagsMode: "discard",
 	});
 }
+
+export function sanitizeSimpleText(text: string) {
+	return sanitizeHtml(text, {
+		allowedTags: [],
+		allowedAttributes: {},
+		disallowedTagsMode: "discard",
+	});
+}

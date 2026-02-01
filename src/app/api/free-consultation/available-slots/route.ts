@@ -105,44 +105,59 @@ export async function POST(req: NextRequest): Promise<Response> {
 		}
 
 		// --------------------------------------------------------------------
-		// ENVIRONMENT CHECK
+		// CACHE CHECK
 		// --------------------------------------------------------------------
+		const cacheKey = `calendar-events:${dateStr}`;
+		const cachedEvents = await redis.get<CalendarEvent[]>(cacheKey);
 
-		const { GOOGLE_SERVICE_CLIENT_EMAIL, GOOGLE_SERVICE_PRIVATE_KEY, GOOGLE_CALENDAR_ID } = process.env;
+		let events: CalendarEvent[];
 
-		if (!GOOGLE_SERVICE_CLIENT_EMAIL || !GOOGLE_SERVICE_PRIVATE_KEY || !GOOGLE_CALENDAR_ID) {
-			console.error("Missing Google Calendar env vars");
-			return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500 });
+		if (cachedEvents) {
+			events = cachedEvents;
+		} else {
+			// --------------------------------------------------------------------
+			// ENVIRONMENT CHECK
+			// --------------------------------------------------------------------
+
+			const { GOOGLE_SERVICE_CLIENT_EMAIL, GOOGLE_SERVICE_PRIVATE_KEY, GOOGLE_CALENDAR_ID } = process.env;
+
+			if (!GOOGLE_SERVICE_CLIENT_EMAIL || !GOOGLE_SERVICE_PRIVATE_KEY || !GOOGLE_CALENDAR_ID) {
+				console.error("Missing Google Calendar env vars");
+				return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500 });
+			}
+
+			// --------------------------------------------------------------------
+			// GOOGLE CALENDAR AUTH
+			// --------------------------------------------------------------------
+
+			const auth = new google.auth.JWT({
+				email: GOOGLE_SERVICE_CLIENT_EMAIL,
+				key: GOOGLE_SERVICE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+				scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+			});
+
+			const calendar = google.calendar({ version: "v3", auth });
+
+			// --------------------------------------------------------------------
+			// FETCH EVENTS
+			// --------------------------------------------------------------------
+
+			const startOfDay = new Date(`${dateStr}T00:00:00+09:00`);
+			const endOfDay = new Date(`${dateStr}T23:59:59+09:00`);
+
+			const eventsRes = await calendar.events.list({
+				calendarId: GOOGLE_CALENDAR_ID,
+				timeMin: startOfDay.toISOString(),
+				timeMax: endOfDay.toISOString(),
+				singleEvents: true,
+				orderBy: "startTime",
+			});
+
+			events = eventsRes.data.items ?? [];
+
+			// Cache the results for 5 minutes
+			await redis.set(cacheKey, events, { ex: 300 });
 		}
-
-		// --------------------------------------------------------------------
-		// GOOGLE CALENDAR AUTH
-		// --------------------------------------------------------------------
-
-		const auth = new google.auth.JWT({
-			email: GOOGLE_SERVICE_CLIENT_EMAIL,
-			key: GOOGLE_SERVICE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-			scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
-		});
-
-		const calendar = google.calendar({ version: "v3", auth });
-
-		// --------------------------------------------------------------------
-		// FETCH EVENTS
-		// --------------------------------------------------------------------
-
-		const startOfDay = new Date(`${dateStr}T00:00:00+09:00`);
-		const endOfDay = new Date(`${dateStr}T23:59:59+09:00`);
-
-		const eventsRes = await calendar.events.list({
-			calendarId: GOOGLE_CALENDAR_ID,
-			timeMin: startOfDay.toISOString(),
-			timeMax: endOfDay.toISOString(),
-			singleEvents: true,
-			orderBy: "startTime",
-		});
-
-		const events: CalendarEvent[] = eventsRes.data.items ?? [];
 
 		// --------------------------------------------------------------------
 		// SLOT FILTERING

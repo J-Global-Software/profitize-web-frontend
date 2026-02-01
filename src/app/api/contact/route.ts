@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { Resend } from "resend";
 
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Validators } from "@/src/utils/validation/validators";
 import { ValidationError } from "@/src/utils/validation/ErrorValidator";
-import { sanitizeEmailMessage } from "@/src/utils/sanitizeEmailMessage";
+import { sanitizeEmailMessage, sanitizeSimpleText } from "@/src/utils/sanitizeEmailMessage";
 import { getOrCreateSession } from "@/src/utils/db/getOrCreateSession";
 import { query } from "@/src/utils/neon";
 
@@ -51,6 +51,14 @@ export async function POST(req: Request) {
 		const contentType = req.headers.get("content-type") ?? "";
 		if (!contentType.includes("application/json")) {
 			return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+		}
+
+		/* ---------- Rate Limit (Early) ---------- */
+		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown-ip";
+		const { success: rateLimitSuccess } = await limiter.limit(ip);
+
+		if (!rateLimitSuccess) {
+			return NextResponse.json({ error: "Too many messages. Please wait and try again." }, { status: 429 });
 		}
 
 		/* ---------- Parse JSON ---------- */
@@ -99,19 +107,14 @@ export async function POST(req: Request) {
 			return NextResponse.json({ success: true });
 		}
 
-		/* ---------- Session ---------- */
-		const { sessionId, isNew } = await getOrCreateSession(req);
+		/* ---------- Parallel: Session & Sanitization ---------- */
+		const [sessionData] = await Promise.all([getOrCreateSession(req)]);
+		const { sessionId, isNew } = sessionData;
 
-		/* ---------- Rate Limit ---------- */
-		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown-ip";
-
-		const identifier = `${sessionId ?? "no-session"}:${ip}`;
-
-		const { success } = await limiter.limit(identifier);
-
-		if (!success) {
-			return NextResponse.json({ error: "Too many messages. Please wait and try again." }, { status: 429 });
-		}
+		const safeFirstName = sanitizeSimpleText(String(firstName));
+		const safeLastName = sanitizeSimpleText(String(lastName));
+		const safeEmail = sanitizeSimpleText(String(email)).toLowerCase().trim();
+		const safeMessageBody = sanitizeEmailMessage(String(message));
 
 		/* ---------- Store ---------- */
 		const result = await query(
@@ -119,36 +122,41 @@ export async function POST(req: Request) {
        (session_id, first_name, last_name, email, message)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-			[sessionId, String(firstName), String(lastName), String(email).toLowerCase().trim(), String(message)],
+			[sessionId, safeFirstName, safeLastName, safeEmail, String(message)],
 		);
 
 		const messageId = result.rows[0].id;
 
-		/* ---------- Email ---------- */
-		const safeMessage = sanitizeEmailMessage(String(message)).replace(/\n/g, "<br />");
+		/* ---------- Background Email ---------- */
+		after(async () => {
+			try {
+				const safeMessageHtml = safeMessageBody.replace(/\n/g, "<br />");
+				const resend = new Resend(process.env.RESEND_API_KEY);
 
-		const resend = new Resend(process.env.RESEND_API_KEY);
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL!,
+					to: [process.env.LECTURER_EMAIL!],
+					replyTo: safeEmail,
+					subject: `New Contact Message (ID: ${messageId})`,
+					html: `
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; padding: 20px;">
+              <h2 style="color: #2563eb;">New Contact Message</h2>
 
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL!,
-			to: [process.env.LECTURER_EMAIL!],
-			replyTo: String(email).toLowerCase().trim(),
-			subject: `New Contact Message (ID: ${messageId})`,
-			html: `
-        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; padding: 20px;">
-          <h2 style="color: #2563eb;">New Contact Message</h2>
+              <p><strong>Message ID:</strong> ${messageId}</p>
+              <p><strong>Session ID:</strong> ${sessionId}</p>
+              <p><strong>First Name:</strong> ${safeFirstName}</p>
+              <p><strong>Last Name:</strong> ${safeLastName}</p>
+              <p><strong>Email:</strong> ${safeEmail}</p>
+              <p><strong>Message:</strong><br />${safeMessageHtml}</p>
 
-          <p><strong>Message ID:</strong> ${messageId}</p>
-          <p><strong>Session ID:</strong> ${sessionId}</p>
-          <p><strong>First Name:</strong> ${firstName}</p>
-          <p><strong>Last Name:</strong> ${lastName}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Message:</strong><br />${safeMessage}</p>
-
-          <hr style="margin: 20px 0;" />
-          <p style="font-size: 0.9em; color: #666;">— Contact System</p>
-        </div>
-      `,
+              <hr style="margin: 20px 0;" />
+              <p style="font-size: 0.9em; color: #666;">— Contact System</p>
+            </div>
+          `,
+				});
+			} catch (err) {
+				console.error("BACKGROUND EMAIL ERROR:", err);
+			}
 		});
 
 		/* ---------- Response ---------- */

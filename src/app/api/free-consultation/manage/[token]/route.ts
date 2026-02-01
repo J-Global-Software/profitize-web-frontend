@@ -1,39 +1,45 @@
 import { query } from "@/src/utils/neon";
 import { NextRequest } from "next/server";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
+const redis = Redis.fromEnv();
+const limiter = new Ratelimit({
+	redis,
+	limiter: Ratelimit.slidingWindow(20, "1m"),
+});
 
 export async function GET(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	try {
+		// -----------------------------
+		// 1. Rate Limiting
+		// -----------------------------
+		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+		const { success } = await limiter.limit(ip);
+		if (!success) {
+			return Response.json({ error: "Too many requests" }, { status: 429 });
+		}
+
 		// Await the params Promise
 		const params = await context.params;
 		const token = params.token;
 
-		// 1️⃣ Validate token format
+		// 2. Validate token format
 		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 		if (!uuidRegex.test(token)) {
 			return Response.json({ error: "Invalid token format" }, { status: 400 });
 		}
 
-		// 2️⃣ Fetch booking by cancellation token
+		// 3. Fetch booking (optimized: get latest version in one query)
 		const baseResult = await query(
-			`SELECT
-				id,
-				first_name,
-				last_name,
-				email,
-				phone_number,
-				message,
-				event_date,
-				status,
-				google_calendar_event_id,
-				zoom_meeting_id,
-				zoom_join_url,
-				created_at,
-				rescheduled_at,
-				cancelled_at,
-				original_booking_id
-			FROM profitize.bookings
-			WHERE cancellation_token = $1
+			`WITH initial_booking AS (
+				SELECT * FROM profitize.bookings WHERE cancellation_token = $1 LIMIT 1
+			)
+			SELECT * FROM initial_booking
+			UNION ALL
+			SELECT * FROM profitize.bookings WHERE original_booking_id = (SELECT id FROM initial_booking)
+			ORDER BY created_at DESC
 			LIMIT 1`,
 			[token],
 		);
@@ -42,56 +48,26 @@ export async function GET(req: NextRequest, context: { params: Promise<{ token: 
 			return Response.json({ error: "Booking not found" }, { status: 404 });
 		}
 
-		let booking = baseResult.rows[0];
-		let isRedirectedFromOldBooking = false;
+		const booking = baseResult.rows[0];
 
-		// 3️⃣ If this booking has been rescheduled, fetch the latest child booking
-		const latestResult = await query(
-			`SELECT
-				id,
-				first_name,
-				last_name,
-				email,
-				phone_number,
-				message,
-				event_date,
-				status,
-				google_calendar_event_id,
-				zoom_meeting_id,
-				zoom_join_url,
-				created_at,
-				rescheduled_at,
-				cancelled_at,
-				original_booking_id
-			FROM profitize.bookings
-			WHERE original_booking_id = $1
-			ORDER BY created_at DESC
-			LIMIT 1`,
-			[booking.id],
-		);
+		// To correctly identify if we "redirected" to a later booking:
+		const isRedirectedFromOldBooking = booking.cancellation_token !== token;
 
-		if (latestResult.rows.length > 0) {
-			booking = latestResult.rows[0];
-			isRedirectedFromOldBooking = true;
-		}
-
-		// 4️⃣ Time logic
+		// 4. Time logic
 		const eventDate = new Date(booking.event_date);
 		const now = new Date();
 
 		const isPast = eventDate < now;
 		const hoursUntilEvent = (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-		const withinTimeLimit = hoursUntilEvent > 6 && !isPast;
-
-		// 5️⃣ Reschedule / cancel rules
+		// 5. Reschedule / cancel rules
 		const isRescheduledBooking = booking.original_booking_id !== null;
 
-		const canReschedule = withinTimeLimit && booking.status === "confirmed" && !isRescheduledBooking;
+		const canReschedule = hoursUntilEvent > 6 && !isPast && booking.status === "confirmed" && !isRescheduledBooking;
 
-		const canCancel = withinTimeLimit && booking.status === "confirmed";
+		const canCancel = hoursUntilEvent > 24 && !isPast && booking.status === "confirmed";
 
-		// 6️⃣ Response
+		// 6. Response
 		const responseData = {
 			booking: {
 				id: booking.id,

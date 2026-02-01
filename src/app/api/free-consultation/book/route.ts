@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import type { NextRequest } from "next/server";
+import { type NextRequest, after } from "next/server";
 import { Resend } from "resend";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -9,6 +9,7 @@ import { query } from "@/src/utils/neon";
 import { isValidationError } from "@/src/utils/validation/ErrorValidator";
 import { loadServerMessages } from "@/messages/server";
 import { createZoomMeeting } from "@/src/utils/zoom";
+import { sanitizeEmailMessage, sanitizeSimpleText } from "@/src/utils/sanitizeEmailMessage";
 
 const redis = Redis.fromEnv();
 const limiter = new Ratelimit({
@@ -21,9 +22,15 @@ function interpolate(template: string, values: Record<string, string>) {
 }
 
 export async function POST(req: NextRequest) {
-	const ip = req.headers.get("x-forwarded-for") || "unknown";
+	const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+	const cookieHeader = req.headers.get("cookie") ?? "";
+	const sessionIdFromCookie = cookieHeader
+		.split(";")
+		.find((c) => c.trim().startsWith("sessionId="))
+		?.split("=")[1];
+	const identifier = sessionIdFromCookie ? `${sessionIdFromCookie}:${ip}` : ip;
 
-	const { success } = await limiter.limit(ip);
+	const { success } = await limiter.limit(identifier);
 	if (!success) {
 		return new Response(JSON.stringify({ error: "Too many requests. Try later." }), {
 			status: 429,
@@ -31,7 +38,6 @@ export async function POST(req: NextRequest) {
 	}
 
 	const locale = req.headers.get("x-locale") || "ja";
-	const messages = await loadServerMessages(locale);
 
 	try {
 		const body = await req.json();
@@ -51,6 +57,15 @@ export async function POST(req: NextRequest) {
 			Validators.minLength(message, 10, "Message");
 			Validators.maxLength(message, 2000, "Message");
 		}
+
+		// Parallel: Load messages, Session, and Google Auth setup
+		const [messages, { sessionId }] = await Promise.all([loadServerMessages(locale), getOrCreateSession(req)]);
+
+		const safeFirstName = sanitizeSimpleText(String(firstName));
+		const safeLastName = sanitizeSimpleText(String(lastName));
+		const safeEmail = sanitizeSimpleText(String(email)).toLowerCase().trim();
+		const safePhone = sanitizeSimpleText(String(phone || ""));
+		const safeMessage = message ? sanitizeEmailMessage(String(message)) : "";
 
 		// Google Calendar Auth
 		const auth = new google.auth.JWT({
@@ -87,28 +102,26 @@ export async function POST(req: NextRequest) {
 		// Create Zoom meeting
 		const startJST = new Date(`${date}T${time}:00+09:00`);
 		const startUTC = new Date(startJST.getTime() - startJST.getTimezoneOffset() * 60000);
-		const { meeting, registrantLinks } = await createZoomMeeting(`(Profitize) Free Consultation X ${firstName} ${lastName}`, startUTC, 30, [{ email, firstName, lastName }]);
+		const { meeting, registrantLinks } = await createZoomMeeting(`(Profitize) Free Consultation X ${safeFirstName} ${safeLastName}`, startUTC, 30, [{ email: safeEmail, firstName: safeFirstName, lastName: safeLastName }]);
 
-		const userZoomLink = registrantLinks[email];
+		const userZoomLink = registrantLinks[safeEmail];
 
 		// Insert event into calendar
 		const event = {
-			summary: "(Profitize) Free Consultation X " + firstName + " " + lastName,
-			description: `Free consultation session with ${firstName} ${lastName}
-Email: ${email}
-${phone ? `Phone: ${phone}\n` : ""}${message ? `Message: ${message}\n` : ""}
+			summary: "(Profitize) Free Consultation X " + safeFirstName + " " + safeLastName,
+			description: `Free consultation session with ${safeFirstName} ${safeLastName}
+Email: ${safeEmail}
+${safePhone ? `Phone: ${safePhone}\n` : ""}${safeMessage ? `Message: ${safeMessage}\n` : ""}
 Zoom link: ${userZoomLink || ""}`,
 			start: { dateTime: start.toISOString(), timeZone: "Asia/Tokyo" },
 			end: { dateTime: end.toISOString(), timeZone: "Asia/Tokyo" },
-			extendedProperties: { private: { firstName, lastName, email, phone: phone || "", message: message || "" } },
+			extendedProperties: { private: { firstName: safeFirstName, lastName: safeLastName, email: safeEmail, phone: safePhone || "", message: safeMessage || "" } },
 		};
 
 		const responseEvent = await calendar.events.insert({
 			calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
 			requestBody: event,
 		});
-
-		const { sessionId } = await getOrCreateSession(req);
 
 		// Insert booking with new columns
 		const bookingResult = await query<{ id: string; cancellation_token: string }>(
@@ -119,11 +132,11 @@ Zoom link: ${userZoomLink || ""}`,
   RETURNING id, cancellation_token`,
 			[
 				sessionId,
-				firstName,
-				lastName,
-				email,
-				phone || "",
-				message || "",
+				safeFirstName,
+				safeLastName,
+				safeEmail,
+				safePhone || "",
+				String(message || ""),
 				start.toISOString(),
 				responseEvent.data.id, // $8 - google_calendar_event_id
 				String(meeting.id), // $9 - zoom_meeting_id
@@ -135,83 +148,39 @@ Zoom link: ${userZoomLink || ""}`,
 
 		const cancellationToken = bookingResult.rows[0].cancellation_token;
 
-		// Send emails
-		const resend = new Resend(process.env.RESEND_API_KEY);
-
-		const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
-		const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Free+Consultation+Session&dates=${formatForGoogle(start)}/${formatForGoogle(end)}&details=Your+free+consultation+session&location=Online`;
-		const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=Free+Consultation+Session&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=Your+free+consultation+session&location=Online`;
-
-		const generateICS = ({ start, end, title, description, location }: { start: Date; end: Date; title: string; description: string; location: string }) => {
-			const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
-			return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//J Global Biz School//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(start)}`, `DTEND:${formatICSDate(end)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-		};
-
-		const icsContent = generateICS({
-			start,
-			end,
-			title: "Free Consultation Session",
-			description: "Your free consultation session",
-			location: "Online",
-		});
-
 		// Management URL for reschedule/cancel
 		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${cancellationToken}`;
 
-		const text =
-			locale === "ja"
-				? `${interpolate(messages.server.email.hi, { name: lastName })}
+		// Background Emails
+		after(async () => {
+			try {
+				const resend = new Resend(process.env.RESEND_API_KEY);
 
-${messages.server.email.thanks}
-${interpolate(messages.server.email.seeYou, { date, time })}
+				const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
+				const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Free+Consultation+Session&dates=${formatForGoogle(start)}/${formatForGoogle(end)}&details=Your+free+consultation+session&location=Online`;
+				const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=Free+Consultation+Session&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=Your+free+consultation+session&location=Online`;
 
-${messages.server.email.serviceBooked}: ${messages.server.email.serviceName}
-${messages.server.email.staff}: ${messages.server.email.staffName}
-${messages.server.email.platform}: ${messages.server.email.platformValue}
-${messages.server.email.dateTimeLabel}: ${date} ${time}
+				const generateICS = ({ start, end, title, description, location }: { start: Date; end: Date; title: string; description: string; location: string }) => {
+					const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
+					return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//J Global Biz School//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(start)}`, `DTEND:${formatICSDate(end)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+				};
 
-Zoom link: ${userZoomLink || ""}
-${messages.server.email.rescheduleText}: ${managementUrl}
+				const icsContent = generateICS({
+					start,
+					end,
+					title: "Free Consultation Session",
+					description: "Your free consultation session",
+					location: "Online",
+				});
 
-${messages.server.email.calendar.addToCalendar}
-Google Calendar: ${calendarUrl}
-Outlook / Teams: ${outlookUrl}
+				const safeMessageHtml = safeMessage ? safeMessage.replace(/\n/g, "<br />") : "";
 
-${messages.server.email.contact}
-Email: ${messages.server.email.supportEmail}
-
-${messages.server.email.footerWebsite}: ${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}
-${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}`
-				: `${interpolate(messages.server.email.hi, { name: firstName })}
-
-${messages.server.email.thanks}
-${interpolate(messages.server.email.seeYou, { date, time })}
-
-${messages.server.email.serviceBooked}: ${messages.server.email.serviceName}
-${messages.server.email.staff}: ${messages.server.email.staffName}
-${messages.server.email.platform}: ${messages.server.email.platformValue}
-${messages.server.email.dateTimeLabel}: ${date} ${time}
-
-Zoom link: ${userZoomLink || ""}
-${messages.server.email.rescheduleText}: ${managementUrl}
-
-${messages.server.email.calendar.addToCalendar}
-Google Calendar: ${calendarUrl}
-Outlook / Teams: ${outlookUrl}
-
-${messages.server.email.contact}
-Email: ${messages.server.email.supportEmail}
-
-${messages.server.email.footerWebsite}: ${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}
-${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}`;
-
-		// Email to user
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: email,
-			subject: messages.server.email.subject,
-			text: text,
-			html: `
+				// Email to user
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: safeEmail,
+					subject: messages.server.email.subject,
+					html: `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="${locale}">
@@ -240,7 +209,7 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
           <!-- Content -->
           <tr>
             <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-              ${interpolate(messages.server.email.hi, { name: locale === "ja" ? lastName : firstName })}<br><br>
+              ${interpolate(messages.server.email.hi, { name: locale === "ja" ? safeLastName : safeFirstName })}<br><br>
               ${messages.server.email.thanks}<br>
               ${interpolate(messages.server.email.seeYou, { date, time })}
 
@@ -328,21 +297,21 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
 </html>
 
 `,
-			attachments: [
-				{
-					filename: "consultation-session.ics",
-					content: icsContent,
-					contentType: "text/calendar; charset=utf-8",
-				},
-			],
-		});
+					attachments: [
+						{
+							filename: "consultation-session.ics",
+							content: icsContent,
+							contentType: "text/calendar; charset=utf-8",
+						},
+					],
+				});
 
-		// Email to lecturer
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: process.env.LECTURER_EMAIL || "",
-			subject: "(Profitize) Free Consultation Booking Received",
-			html: `
+				// Email to lecturer
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: process.env.LECTURER_EMAIL || "",
+					subject: "(Profitize) Free Consultation Booking Received",
+					html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -376,10 +345,10 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
         <p>A new user has booked a free consultation session.</p>
 
         <div class="detail-card">
-          <div class="row"><span class="label">Name:</span><span class="value">${firstName} ${lastName || ""}</span></div>
-          <div class="row"><span class="label">Email:</span><span class="value">${email}</span></div>
-          ${phone?.trim() ? `<div class="row"><span class="label">Phone Number:</span><span class="value">${phone}</span></div>` : ""}
-          ${message?.trim() ? `<div class="row"><span class="label">Message:</span><span class="value">${message}</span></div>` : ""}
+          <div class="row"><span class="label">Name:</span><span class="value">${safeFirstName} ${safeLastName}</span></div>
+          <div class="row"><span class="label">Email:</span><span class="value">${safeEmail}</span></div>
+          ${safePhone ? `<div class="row"><span class="label">Phone Number:</span><span class="value">${safePhone}</span></div>` : ""}
+          ${safeMessageHtml ? `<div class="row"><span class="label">Message:</span><span class="value">${safeMessageHtml}</span></div>` : ""}
           <div class="row"><span class="label">Date:</span><span class="value">${date}</span></div>
           <div class="row"><span class="label">Time:</span><span class="value">${time} (JST)</span></div>
         </div>
@@ -392,6 +361,10 @@ ${messages.server.email.footerPrivacy}: ${locale === "ja" ? "https://profitize.j
 </body>
 </html>
 `,
+				});
+			} catch (err) {
+				console.error("BACKGROUND BOOKING EMAILS ERROR:", err);
+			}
 		});
 
 		return new Response(JSON.stringify({ success: true, event: responseEvent, sessionId }), {

@@ -1,73 +1,65 @@
 import { Resend } from "resend";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { loadServerMessages } from "../../../../../../../messages/server";
 import { query } from "@/src/utils/neon";
 import { deleteCalendarEvent } from "@/src/utils/google-calendar";
 import { deleteZoomMeeting } from "@/src/utils/zoom";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { sanitizeEmailMessage, sanitizeSimpleText } from "@/src/utils/sanitizeEmailMessage";
+
+const redis = Redis.fromEnv();
+const limiter = new Ratelimit({
+	redis,
+	limiter: Ratelimit.slidingWindow(5, "30m"),
+});
 
 export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	const locale = req.headers.get("x-locale") || "ja";
-	const messages = await loadServerMessages(locale);
+
 	function interpolate(template: string, values: Record<string, string>) {
 		return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
 	}
 
 	try {
+		// 1. Rate Limiting
+		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+		const { success } = await limiter.limit(ip);
+		if (!success) {
+			return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+		}
+
 		const { token } = await context.params;
 
-		// 1️⃣ Validate token format
+		// 2. Validate token format
 		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 		if (!uuidRegex.test(token)) {
 			return new Response(JSON.stringify({ error: "Invalid token" }), { status: 400 });
 		}
 
-		// 2️⃣ Fetch booking by token
-		const result = await query(
-			`
-			SELECT
-				id,
-				first_name,
-				last_name,
-				email,
-				event_date,
-				status,
-				google_calendar_event_id,
-				zoom_meeting_id
-			FROM profitize.bookings
-			WHERE cancellation_token = $1
-			`,
-			[token],
-		);
+		// Parallel: Load messages and Fetch booking
+		const [messages, result] = await Promise.all([
+			loadServerMessages(locale),
+			query(
+				`WITH target_booking AS (
+					SELECT * FROM profitize.bookings WHERE cancellation_token = $1 LIMIT 1
+				)
+				SELECT * FROM profitize.bookings
+				WHERE (id = (SELECT id FROM target_booking) OR original_booking_id = (SELECT id FROM target_booking))
+				  AND status = 'confirmed'
+				ORDER BY created_at DESC
+				LIMIT 1`,
+				[token],
+			),
+		]);
 
 		if (!result.rows || result.rows.length === 0) {
-			return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404 });
+			return new Response(JSON.stringify({ error: "Booking not found or already cancelled/rescheduled" }), { status: 404 });
 		}
 
-		let booking = result.rows[0];
+		const booking = result.rows[0];
 
-		// 🔁 3️⃣ If booking was rescheduled, cancel the NEW confirmed booking instead
-		const latestResult = await query(
-			`
-			SELECT *
-			FROM profitize.bookings
-			WHERE original_booking_id = $1
-			  AND status = 'confirmed'
-			ORDER BY created_at DESC
-			LIMIT 1
-			`,
-			[booking.id],
-		);
-
-		if (latestResult.rows && latestResult.rows.length > 0) {
-			booking = latestResult.rows[0];
-		}
-
-		// 4️⃣ Validate status
-		if (booking.status !== "confirmed") {
-			return new Response(JSON.stringify({ error: `Cannot cancel a booking with status: ${booking.status}` }), { status: 400 });
-		}
-
-		// 5️⃣ 24-hour + past check
+		// 3. Time validation
 		const eventDate = new Date(booking.event_date);
 		const now = new Date();
 		const hoursUntilEvent = (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -80,25 +72,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			return new Response(JSON.stringify({ error: "Cannot cancel within 24 hours of the event" }), { status: 400 });
 		}
 
-		// 6️⃣ Delete Google Calendar event (best effort)
-		if (booking.google_calendar_event_id) {
-			try {
-				await deleteCalendarEvent(booking.google_calendar_event_id);
-			} catch (error) {
-				console.error("⚠️ Failed to delete calendar event:", error);
-			}
-		}
-
-		// 7️⃣ Delete Zoom meeting (404-safe)
-		if (booking.zoom_meeting_id) {
-			try {
-				await deleteZoomMeeting(booking.zoom_meeting_id);
-			} catch (error) {
-				console.error("⚠️ Failed to delete Zoom meeting:", error);
-			}
-		}
-
-		// 8️⃣ Update booking status
+		// 4. Update booking status (Wait for this before responding)
 		await query(
 			`
 			UPDATE profitize.bookings
@@ -109,15 +83,34 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			[new Date().toISOString(), booking.id],
 		);
 
-		// 9️⃣ Send emails
-		const resend = new Resend(process.env.RESEND_API_KEY);
+		// 5. Background Tasks
+		after(async () => {
+			try {
+				// Sanitize data for email
+				const safeFirstName = sanitizeSimpleText(booking.first_name);
+				const safeLastName = sanitizeSimpleText(booking.last_name);
+				const safeEmail = sanitizeSimpleText(booking.email);
+				const safeMessageHtml = booking.message ? sanitizeEmailMessage(booking.message).replace(/\n/g, "<br />") : "";
 
-		// User email
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: booking.email,
-			subject: messages.server.email.cancelledSubject, // pulled from JSON
-			html: `
+				// Delete External resources (Parallel)
+				const deleteTasks = [];
+				if (booking.google_calendar_event_id) {
+					deleteTasks.push(deleteCalendarEvent(booking.google_calendar_event_id).catch((e) => console.error("Calendar delete fail:", e)));
+				}
+				if (booking.zoom_meeting_id) {
+					deleteTasks.push(deleteZoomMeeting(booking.zoom_meeting_id).catch((e) => console.error("Zoom delete fail:", e)));
+				}
+				await Promise.all(deleteTasks);
+
+				// Send emails
+				const resend = new Resend(process.env.RESEND_API_KEY);
+
+				// User email
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: safeEmail,
+					subject: messages.server.email.cancelledSubject,
+					html: `
 <!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -126,27 +119,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 </head>
 <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
 
-<!-- Wrapper -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
   <tr>
     <td align="center">
-      <!-- Container -->
       <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
-        
-        <!-- Header -->
         <tr>
           <td style="padding:48px; text-align:center;">
             <h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${messages.server.email.cancelledHeader}</h1>
           </td>
         </tr>
-
-        <!-- Content -->
         <tr>
           <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? booking.last_name : booking.first_name })}</p>
+            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? safeLastName : safeFirstName })}</p>
             <p>${messages.server.email.cancelledIntro}</p>
 
-            <!-- Detail Card -->
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
               <tr>
                 <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px;">${messages.server.email.serviceBooked}</td>
@@ -166,10 +152,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
               </tr>
             </table>
 
-            <!-- Cancelled Action -->
             <p>${messages.server.email.cancelledAction}</p>
 
-            <!-- Support Email -->
             <p style="margin-top:32px; font-size:13px; line-height:1.6; color:#64748b;">
               <a href="mailto:${messages.server.email.supportEmail}" style="color:#1e40af; font-weight:600; text-decoration:none;">${messages.server.email.supportEmail}</a>
             </p>
@@ -179,7 +163,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
         </tr>
       </table>
 
-      <!-- Footer -->
       <table width="540" cellpadding="0" cellspacing="0" border="0" style="margin:40px auto; text-align:center; font-family:Arial, sans-serif; font-size:12px; color:#94a3b8;">
         <tr>
           <td>
@@ -207,14 +190,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 </html>
 
 `,
-		});
+				});
 
-		// Lecturer email
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: process.env.LECTURER_EMAIL || "",
-			subject: "(Profitize) Consultation Session Cancelled by User",
-			html: `
+				// Lecturer email
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: process.env.LECTURER_EMAIL || "",
+					subject: "(Profitize) Consultation Session Cancelled by User",
+					html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -231,10 +214,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
   .row { margin-bottom:12px; }
   .label { font-weight:600; color:#94a3b8; margin-right:6px; text-transform:uppercase; font-size:12px; }
   .value { font-weight:500; color:#1e293b; }
-  @media screen and (max-width:600px) {
-    .wrapper { padding:20px 0; }
-    .header, .content { padding:24px; }
-  }
 </style>
 </head>
 <body>
@@ -248,13 +227,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
         <p>The following session has been cancelled:</p>
 
         <div class="detail-card">
-          <div class="row"><span class="label">Name:</span><span class="value">${booking.first_name} ${booking.last_name}</span></div>
-          <div class="row"><span class="label">Email:</span><span class="value">${booking.email}</span></div>
+          <div class="row"><span class="label">Name:</span><span class="value">${safeFirstName} ${safeLastName}</span></div>
+          <div class="row"><span class="label">Email:</span><span class="value">${safeEmail}</span></div>
+          ${safeMessageHtml ? `<div class="row"><span class="label">Message:</span><span class="value">${safeMessageHtml}</span></div>` : ""}
           <div class="row"><span class="label">Date:</span><span class="value">${new Date(booking.event_date).toLocaleString("en-US", {
-				timeZone: "Asia/Tokyo",
-				dateStyle: "long",
-				timeStyle: "short",
-			})} JST</span></div>
+						timeZone: "Asia/Tokyo",
+						dateStyle: "long",
+						timeStyle: "short",
+					})} JST</span></div>
         </div>
 
         <p style="margin-top:24px;">— profitize.jp Team</p>
@@ -264,6 +244,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 </body>
 </html>
 `,
+				});
+			} catch (error) {
+				console.error("Background cancellation tasks error:", error);
+			}
 		});
 
 		return new Response(JSON.stringify({ success: true, message: "Booking cancelled successfully" }), { status: 200, headers: { "Content-Type": "application/json" } });

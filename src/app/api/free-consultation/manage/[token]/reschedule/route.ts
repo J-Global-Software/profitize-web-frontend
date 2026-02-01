@@ -1,24 +1,42 @@
 import { Resend } from "resend";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { loadServerMessages } from "@/messages/server";
 import { query } from "@/src/utils/neon";
 import { Validators } from "@/src/utils/validation/validators";
 import { deleteCalendarEvent, getCalendarAuth } from "@/src/utils/google-calendar";
 import { createZoomMeeting, deleteZoomMeeting } from "@/src/utils/zoom";
 import { isValidationError } from "@/src/utils/validation/ErrorValidator";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { sanitizeEmailMessage, sanitizeSimpleText } from "@/src/utils/sanitizeEmailMessage";
+
+const redis = Redis.fromEnv();
+const limiter = new Ratelimit({
+	redis,
+	limiter: Ratelimit.slidingWindow(5, "30m"),
+});
 
 export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	const locale = req.headers.get("x-locale") || "ja";
-	const messages = await loadServerMessages(locale);
+
 	function interpolate(template: string, values: Record<string, string>) {
 		return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
 	}
+
 	try {
+		// 1. Rate Limiting
+		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+		const { success } = await limiter.limit(ip);
+		if (!success) {
+			return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+		}
+
 		const { token } = await context.params;
 
-		// Validate token
-		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-		if (!uuidRegex.test(token)) {
+		// Validate token format
+		const correctUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+		if (!correctUuidRegex.test(token)) {
 			return new Response(JSON.stringify({ error: "Invalid token" }), { status: 400 });
 		}
 
@@ -30,15 +48,18 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		Validators.required(date, "Date");
 		Validators.required(time, "Time");
 
-		// Fetch original booking
-		const result = await query(
-			`SELECT 
+		// Parallel: Load messages and Fetch original booking
+		const [messages, result] = await Promise.all([
+			loadServerMessages(locale),
+			query(
+				`SELECT
         id, first_name, last_name, email, phone_number, message, event_date, status,
         google_calendar_event_id, zoom_meeting_id
       FROM profitize.bookings
       WHERE cancellation_token = $1`,
-			[token],
-		);
+				[token],
+			),
+		]);
 
 		if (result.rowCount === 0) {
 			return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404 });
@@ -57,7 +78,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		const hoursUntilOldEvent = (oldEventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
 		if (hoursUntilOldEvent < 6) {
-			return new Response(JSON.stringify({ error: "Cannot reschedule within 24 hours of the original event" }), { status: 400 });
+			return new Response(JSON.stringify({ error: "Cannot reschedule within 6 hours of the original event" }), { status: 400 });
 		}
 
 		if (oldEventDate < now) {
@@ -99,24 +120,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			return new Response(JSON.stringify({ error: "The selected time slot is already booked. Please choose another time." }), { status: 409 });
 		}
 
-		// Delete old calendar event
-		if (oldBooking.google_calendar_event_id) {
-			try {
-				await deleteCalendarEvent(oldBooking.google_calendar_event_id);
-			} catch (error) {
-				console.error("Failed to delete old calendar event:", error);
-			}
-		}
-
-		// Delete old Zoom meeting
-		if (oldBooking.zoom_meeting_id) {
-			try {
-				await deleteZoomMeeting(oldBooking.zoom_meeting_id);
-			} catch (error) {
-				console.error("Failed to delete old Zoom meeting:", error);
-			}
-		}
-
 		// Create new Zoom meeting
 		const startUTC = new Date(newStart.getTime() - newStart.getTimezoneOffset() * 60000);
 		const { meeting, registrantLinks } = await createZoomMeeting(`(Profitize) Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`, startUTC, 30, [
@@ -130,11 +133,12 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		const userZoomLink = registrantLinks[oldBooking.email];
 
 		// Create new Google Calendar event
+		const safeOldMessage = oldBooking.message ? sanitizeSimpleText(oldBooking.message) : "";
 		const newEvent = {
 			summary: `Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`,
 			description: `Free Consultation session with ${oldBooking.first_name} ${oldBooking.last_name}
 Email: ${oldBooking.email}
-${oldBooking.phone_number ? `Phone: ${oldBooking.phone_number}\n` : ""}${oldBooking.message ? `Message: ${oldBooking.message}\n` : ""}
+${oldBooking.phone_number ? `Phone: ${oldBooking.phone_number}\n` : ""}${safeOldMessage ? `Message: ${safeOldMessage}\n` : ""}
 Zoom link: ${userZoomLink || ""}
 (Rescheduled from ${oldEventDate.toLocaleString("en-US", { timeZone: "Asia/Tokyo" })})`,
 			start: { dateTime: newStart.toISOString(), timeZone: "Asia/Tokyo" },
@@ -145,7 +149,7 @@ Zoom link: ${userZoomLink || ""}
 					lastName: oldBooking.last_name,
 					email: oldBooking.email,
 					phone: oldBooking.phone_number || "",
-					message: oldBooking.message || "",
+					message: safeOldMessage,
 				},
 			},
 		};
@@ -171,58 +175,46 @@ Zoom link: ${userZoomLink || ""}
 		// Update OLD booking status
 		await query(`UPDATE profitize.bookings SET status = 'rescheduled', rescheduled_at = $1 WHERE id = $2`, [new Date().toISOString(), oldBooking.id]);
 
-		// ============================================================
-		// SEND EMAIL NOTIFICATIONS
-		// ============================================================
-		const resend = new Resend(process.env.RESEND_API_KEY);
-		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${newCancellationToken}`;
+		// Background Tasks
+		after(async () => {
+			try {
+				// 1. Delete old External resources
+				const deleteTasks = [];
+				if (oldBooking.google_calendar_event_id) {
+					deleteTasks.push(deleteCalendarEvent(oldBooking.google_calendar_event_id).catch((e) => console.error("Old calendar delete fail:", e)));
+				}
+				if (oldBooking.zoom_meeting_id) {
+					deleteTasks.push(deleteZoomMeeting(oldBooking.zoom_meeting_id).catch((e) => console.error("Old zoom delete fail:", e)));
+				}
+				await Promise.all(deleteTasks);
 
-		// Calendar URLs
-		const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
-		const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Free+Consultation+Session&dates=${formatForGoogle(newStart)}/${formatForGoogle(newEnd)}&details=Your+free+consultation+session&location=Online`;
-		const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=Free+Consultation+Session&startdt=${newStart.toISOString()}&enddt=${newEnd.toISOString()}&body=Your+free+consultation+session&location=Online`;
+				// 2. Sanitize and send emails
+				const safeFirstName = sanitizeSimpleText(oldBooking.first_name);
+				const safeLastName = sanitizeSimpleText(oldBooking.last_name);
+				const safeEmail = sanitizeSimpleText(oldBooking.email);
+				const safePhone = sanitizeSimpleText(oldBooking.phone_number || "");
+				const safeMessageHtml = oldBooking.message ? sanitizeEmailMessage(oldBooking.message).replace(/\n/g, "<br />") : "";
 
-		// Generate ICS file
-		const generateICS = ({ title, description, location }: { start: Date; end: Date; title: string; description: string; location: string }) => {
-			const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
-			return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Profitize//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(newStart)}`, `DTEND:${formatICSDate(newEnd)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-		};
+				const resend = new Resend(process.env.RESEND_API_KEY);
+				const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${newCancellationToken}`;
 
-		const icsContent = generateICS({
-			start: newStart,
-			end: newEnd,
-			title: "Free Consultation Session",
-			description: "Your free consultation session",
-			location: "Online",
-		});
+				// Calendar URLs
+				const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
+				const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Free+Consultation+Session&dates=${formatForGoogle(newStart)}/${formatForGoogle(newEnd)}&details=Your+free+consultation+session&location=Online`;
+				const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=Free+Consultation+Session&startdt=${newStart.toISOString()}&enddt=${newEnd.toISOString()}&body=Your+free+consultation+session&location=Online`;
 
-		const text = `
-${interpolate(messages.server.email.hi, { name: oldBooking.last_name })}
+				const generateICS = ({ title, description, location }: { title: string; description: string; location: string }) => {
+					const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
+					return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Profitize//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(newStart)}`, `DTEND:${formatICSDate(newEnd)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+				};
 
-${messages.server.email.rescheduledIntro}
+				const icsContent = generateICS({
+					title: "Free Consultation Session",
+					description: "Your free consultation session",
+					location: "Online",
+				});
 
-${messages.server.email.originalDate}: ${oldEventDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST
-${messages.server.email.newDate}: ${newStart.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST
-
-Zoomリンク: ${userZoomLink || ""}
-予約内容の確認・変更はこちら: ${managementUrl}
-
-${messages.server.email.contact}
-メール: ${messages.server.email.supportEmail}
-
-— ${messages.server.email.teamName}
-
-公式ウェブサイト: https://profitize.jp/
-プライバシーポリシー: https://profitize.jp/privacy-policy/
-`;
-
-		// Email to user
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: oldBooking.email,
-			subject: messages.server.email.rescheduledSubject, // from JSON
-			text: text,
-			html: `
+				const userEmailHtml = `
 <!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -230,40 +222,31 @@ ${messages.server.email.contact}
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
-
-<!-- Wrapper -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
   <tr>
     <td align="center">
-      <!-- Container -->
       <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
-        
-        <!-- Header -->
         <tr>
           <td style="padding:48px; text-align:center;">
             <h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${messages.server.email.rescheduledHeader}</h1>
           </td>
         </tr>
-
-        <!-- Content -->
         <tr>
           <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? oldBooking.last_name : oldBooking.first_name })}</p>
+            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? safeLastName : safeFirstName })}</p>
             <p>${messages.server.email.rescheduledIntro}</p>
 
-            <!-- Detail Card -->
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
               <tr>
                 <td style="font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; padding-bottom:4px;">${messages.server.email.originalDate}</td>
-                <td style="font-weight:600; color:#1e293b; font-size:15px;">${oldEventDate.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
+                <td style="font-weight:600; color:#1e293b; font-size:15px;">${oldEventDate.toLocaleString(locale === "ja" ? "ja-JP" : "en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
               </tr>
               <tr>
                 <td style="font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; padding-top:8px; padding-bottom:4px;">${messages.server.email.newDate}</td>
-                <td style="font-weight:600; color:#1e293b; font-size:15px;">${newStart.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
+                <td style="font-weight:600; color:#1e293b; font-size:15px;">${newStart.toLocaleString(locale === "ja" ? "ja-JP" : "en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
               </tr>
             </table>
 
-            <!-- Zoom Button (Centered on Page) -->
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
               <tr>
                 <td align="center">
@@ -274,12 +257,10 @@ ${messages.server.email.contact}
               </tr>
             </table>
 
-            <!-- Reschedule Link -->
             <p style="text-align:center; margin-top:12px; font-size:13px; color:#64748b;">
               <a href="${managementUrl}" style="text-decoration:none; color:#64748b; font-weight:500; border-bottom:1px solid transparent;">${messages.server.email.changeBooking}</a>
             </p>
 
-            <!-- Calendar Links -->
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
               <tr>
                 <td align="center">
@@ -289,60 +270,42 @@ ${messages.server.email.contact}
               </tr>
             </table>
 
-            <!-- Contact -->
             <p style="margin-top:32px; font-size:14px; color:#666;">
               ${messages.server.email.contact} 
               <a href="mailto:${messages.server.email.supportEmail}" style="color:#2563eb; text-decoration:none;">${messages.server.email.supportEmail}</a>
             </p>
-
             <p style="margin-top:32px;">— ${messages.server.email.teamName}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Footer -->
-      <table width="540" cellpadding="0" cellspacing="0" border="0" style="margin:40px auto; text-align:center; font-family:Arial, sans-serif; font-size:12px; color:#94a3b8;">
-        <tr>
-          <td>
-            <img src="https://profitize.jp/images/logo.png" alt="Profitize" style="max-width:120px; margin-bottom:16px; opacity:0.9; display:block; margin-left:auto; margin-right:auto;">
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-bottom:10px;">
-            <a href="${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}" style="color:#94a3b8; text-decoration:none; margin-right:15px;">${messages.server.email.footerWebsite}</a>
-            <a href="${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}" style="color:#94a3b8; text-decoration:none;">${messages.server.email.footerPrivacy}</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:11px; color:#cbd5e1; line-height:1.6;">
-            &copy; 2026 Profitize Inc.<br>
-            ${messages.server.email.footerCopyright}
           </td>
         </tr>
       </table>
     </td>
   </tr>
 </table>
-
 </body>
 </html>
+`;
 
-`,
-			attachments: [
-				{
-					filename: "consultation-session.ics",
-					content: icsContent,
-					contentType: "text/calendar; charset=utf-8",
-				},
-			],
-		});
+				// Email to user
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: safeEmail,
+					subject: messages.server.email.rescheduledSubject,
+					html: userEmailHtml,
+					attachments: [
+						{
+							filename: "consultation-session.ics",
+							content: icsContent,
+							contentType: "text/calendar; charset=utf-8",
+						},
+					],
+				});
 
-		// Email to lecturer
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: process.env.LECTURER_EMAIL || "",
-			subject: "(Profitize) Consultation Session Rescheduled by User",
-			html: `
+				// Email to lecturer
+				await resend.emails.send({
+					from: process.env.FROM_EMAIL || "",
+					to: process.env.LECTURER_EMAIL || "",
+					subject: "(Profitize) Consultation Session Rescheduled by User",
+					html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -357,47 +320,42 @@ ${messages.server.email.contact}
   .label { font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; margin-bottom:4px; }
   .value { font-weight:600; color:#1e293b; font-size:15px; }
   .notes { font-size:14px; color:#475569; line-height:1.6; margin-top:20px; }
-  @media screen and (max-width:600px) {
-    .container { padding:24px; }
-  }
 </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
       <h2>Consultation Session Rescheduled</h2>
-
       <p>A user has rescheduled their consultation session.</p>
-
       <div class="card">
         <p class="label">User Details</p>
-        <p class="value"><strong>Name:</strong> ${oldBooking.first_name} ${oldBooking.last_name}</p>
-        <p class="value"><strong>Email:</strong> ${oldBooking.email}</p>
-        ${oldBooking.phone_number ? `<p class="value"><strong>Phone:</strong> ${oldBooking.phone_number}</p>` : ""}
+        <p class="value"><strong>Name:</strong> ${safeFirstName} ${safeLastName}</p>
+        <p class="value"><strong>Email:</strong> ${safeEmail}</p>
+        ${safePhone ? `<p class="value"><strong>Phone:</strong> ${safePhone}</p>` : ""}
+        ${safeMessageHtml ? `<p class="value"><strong>Message:</strong> ${safeMessageHtml}</p>` : ""}
       </div>
-
       <div class="card">
         <p class="label">Session Dates</p>
         <p class="value"><strong>Original Date:</strong> ${oldEventDate.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</p>
         <p class="value"><strong>New Date:</strong> ${newStart.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</p>
       </div>
-
       <div class="notes">
         <ul>
-          <li>Old calendar event and Zoom meeting have been deleted</li>
+          <li>Old calendar event and Zoom meeting have been deleted (background)</li>
           <li>New calendar event has been created</li>
           <li>New Zoom meeting details are in the calendar description</li>
         </ul>
       </div>
-
       <p class="notes" style="margin-top:30px;">— Booking Notification System</p>
     </div>
   </div>
 </body>
 </html>
-
-
 `,
+				});
+			} catch (error) {
+				console.error("Background reschedule tasks error:", error);
+			}
 		});
 
 		return new Response(

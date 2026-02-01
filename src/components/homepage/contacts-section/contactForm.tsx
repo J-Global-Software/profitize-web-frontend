@@ -61,7 +61,7 @@ export function ContactForm() {
 	return (
 		<div className="bg-gray-50 p-5 md:p-10 rounded-3xl">
 			<form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<div className="flex gap-4">
+				<div className="flex flex-col md:flex-row gap-4">
 					{[
 						...(locale === "ja"
 							? [

@@ -1,0 +1,70 @@
+{
+    "common": {
+        "back": "Back",
+        "close": "Close Page",
+        "returnHome": "Return Home",
+        "loading": "Loading...",
+        "updating": "Updating...",
+        "more": "more"
+    },
+    "errors": {
+        "oops": "Oops!",
+        "requestFailed": "Request failed",
+        "fetchBookingFailed": "Failed to fetch booking"
+    },
+    "manage": {
+        "title": "Manage Your Booking",
+        "subtitle": "Here you can view and manage your free consultation booking.",
+        "clientName": "Client Name",
+        "consultationDate": "Consultation Date",
+        "meetingLink": "Meeting Link",
+        "launchZoom": "Launch Zoom Meeting",
+        "notAvailable": "Not available",
+        "reschedule": "Reschedule",
+        "cancel": "Cancel",
+        "bookingRescheduled": "Booking Rescheduled",
+        "bookingCancelled": "Booking Cancelled",
+        "rescheduleSuccess": "Your consultation has been successfully rescheduled. A confirmation email has been sent with the updated details.",
+        "cancelSuccess": "Your consultation has been cancelled successfully. We’re sorry to see you go, but you’re always welcome to book again.",
+        "newDateTime": "New Date & Time",
+        "availableSlots": "Available Time Slots",
+        "selectDate": "Select a date to see available times",
+        "selectDateShort": "Select a date",
+        "allSlots": "All Available Slots",
+        "confirmReschedule": "Confirm Reschedule",
+        "cancelTitle": "Cancel Booking",
+        "cancelWarning": "Are you sure you want to cancel your booking? This action cannot be undone.",
+        "keepBooking": "Keep Booking",
+        "yesCancel": "Yes, Cancel"
+    },
+    "calendar": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+    },
+    "booking": {
+        "title": "Schedule Your Strategy Session",
+        "step1": "Select Time",
+        "step2": "Details",
+        "noSlots": "No slots available",
+        "continue": "Continue to Details",
+        "summary": "Summary",
+        "date": "Date",
+        "time": "Time",
+        "location": "Location",
+        "details": "Your Details",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email address",
+        "messagePlaceholder": "What would you like to discuss?",
+        "confirm": "Confirm Booking",
+        "bookingStatus": "Booking...",
+        "success": "Booking confirmed!",
+        "errorFields": "Please fill in all required fields",
+        "errorDateTime": "Please select a date and time"
+    }
+}

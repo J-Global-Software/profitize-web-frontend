@@ -9,9 +9,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
 	// Load all categories needed for the project
 	const homepage = (await import(`../../messages/${locale}/homepage.json`)).default;
+	const consultation = (await import(`../../messages/${locale}/consultation.json`)).default;
 
 	// Merge into one messages object
-	const messages = { homepage };
+	const messages = { homepage, consultation };
 
 	return { locale, messages };
 });

@@ -7,7 +7,7 @@ export default function Footer() {
 	const t = useTranslations("homepage");
 
 	return (
-		<footer className="bg-white border-t border-gray-100 pt-24 pb-12">
+		<footer id="contact" className="bg-white border-t border-gray-100 pt-24 pb-12">
 			<div className="max-w-[1200px] mx-auto px-6">
 				{/* ================= TOP ================= */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-20">

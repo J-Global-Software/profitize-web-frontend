@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 export default function Hero() {
@@ -21,11 +21,11 @@ export default function Hero() {
 					<p className="text-md md:text-lg text-gray-600 max-w-[500px] leading-relaxed">{t("hero.description")}</p>
 
 					<div className="flex flex-col sm:flex-row gap-4">
-						<Link href="#book-consultation" className="bg-[#1754cf] text-white text-base font-bold px-10 py-3 rounded-xl shadow-xl shadow-[#1754cf]/20 hover:scale-[1.02] transition-transform text-center">
+						<Link href="/free-consultation" className="bg-[#1754cf] text-white text-base font-bold px-10 py-3 rounded-xl shadow-xl shadow-[#1754cf]/20 hover:scale-[1.02] transition-transform text-center">
 							{t("hero.cta.bookConsultation")}
 						</Link>
 
-						<Link href="#offer" className="bg-white border-2 border-[#1754cf]/10 text-[#1754cf] text-base font-bold px-10 py-3 rounded-xl hover:bg-[#f0f4ff] transition-colors text-center">
+						<Link href="#who-we-help" className="bg-white border-2 border-[#1754cf]/10 text-[#1754cf] text-base font-bold px-10 py-3 rounded-xl hover:bg-[#f0f4ff] transition-colors text-center">
 							{t("hero.cta.viewOffer")}
 						</Link>
 					</div>

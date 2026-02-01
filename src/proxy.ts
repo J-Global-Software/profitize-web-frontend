@@ -12,7 +12,7 @@ function isAdminRoute(pathname: string) {
 	return pathname === "/admin" || pathname === "/admin/" || pathname.startsWith("/admin/") || pathname === "/en/admin" || pathname === "/en/admin/" || pathname.startsWith("/en/admin/");
 }
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
 	const { pathname } = req.nextUrl;
 
 	// 1️⃣ Always allow admin login

@@ -1,0 +1,70 @@
+{
+    "common": {
+        "back": "戻る",
+        "close": "ページを閉じる",
+        "returnHome": "ホームへ戻る",
+        "loading": "読み込み中...",
+        "updating": "更新中...",
+        "more": "件"
+    },
+    "errors": {
+        "oops": "エラーが発生しました",
+        "requestFailed": "リクエストに失敗しました",
+        "fetchBookingFailed": "予約情報を取得できませんでした"
+    },
+    "manage": {
+        "title": "予約の管理",
+        "subtitle": "こちらで無料コンサルティングの予約を確認・管理できます。",
+        "clientName": "お名前",
+        "consultationDate": "相談日時",
+        "meetingLink": "ミーティングリンク",
+        "launchZoom": "Zoom ミーティングを開く",
+        "notAvailable": "利用できません",
+        "reschedule": "日程変更",
+        "cancel": "キャンセル",
+        "bookingRescheduled": "予約が変更されました",
+        "bookingCancelled": "予約がキャンセルされました",
+        "rescheduleSuccess": "予約は正常に変更されました。新しい詳細を記載した確認メールを送信しました。",
+        "cancelSuccess": "予約は正常にキャンセルされました。またのご利用をお待ちしております。",
+        "newDateTime": "新しい日時",
+        "availableSlots": "利用可能な時間",
+        "selectDate": "日付を選択してください",
+        "selectDateShort": "日付を選択",
+        "allSlots": "すべての時間枠",
+        "confirmReschedule": "変更を確定",
+        "cancelTitle": "予約をキャンセル",
+        "cancelWarning": "本当に予約をキャンセルしますか？この操作は元に戻せません。",
+        "keepBooking": "予約を保持",
+        "yesCancel": "はい、キャンセルします"
+    },
+    "calendar": {
+        "sun": "日",
+        "mon": "月",
+        "tue": "火",
+        "wed": "水",
+        "thu": "木",
+        "fri": "金",
+        "sat": "土"
+    },
+    "booking": {
+        "title": "戦略セッションの予約",
+        "step1": "時間選択",
+        "step2": "入力",
+        "noSlots": "空き枠がありません",
+        "continue": "詳細入力へ進む",
+        "summary": "予約内容の確認",
+        "date": "日付",
+        "time": "時間",
+        "location": "場所",
+        "details": "お客様情報",
+        "firstName": "名",
+        "lastName": "姓",
+        "email": "メールアドレス",
+        "messagePlaceholder": "ご相談内容をご記入ください",
+        "confirm": "予約を確定する",
+        "bookingStatus": "予約処理中...",
+        "success": "予約が完了しました！",
+        "errorFields": "必須項目をすべて入力してください",
+        "errorDateTime": "日付と時間を選択してください"
+    }
+}

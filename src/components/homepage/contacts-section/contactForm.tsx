@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { submitContactMessage } from "./submitContactMessage";
 
 type ApiError = {
@@ -13,7 +13,7 @@ type ApiError = {
 
 export function ContactForm() {
 	const t = useTranslations("homepage.contact");
-
+	const locale = useLocale();
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [email, setEmail] = useState("");
@@ -61,14 +61,23 @@ export function ContactForm() {
 	return (
 		<div className="bg-gray-50 p-5 md:p-10 rounded-3xl">
 			<form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<div className="flex flex-col gap-2">
-					<label className="text-xs font-bold uppercase tracking-widest opacity-60">{t("firstName")}</label>
-					<input type="text" placeholder={t("placeholder.firstName")} value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="bg-white border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#1754cf]" />
-				</div>
-
-				<div className="flex flex-col gap-2">
-					<label className="text-xs font-bold uppercase tracking-widest opacity-60">{t("lastName")}</label>
-					<input type="text" placeholder={t("placeholder.lastName")} value={lastName} onChange={(e) => setLastName(e.target.value)} required className="bg-white border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#1754cf]" />
+				<div className="flex gap-4">
+					{[
+						...(locale === "ja"
+							? [
+									{ label: t("lastName"), value: lastName, setValue: setLastName, placeholder: t("placeholder.lastName") },
+									{ label: t("firstName"), value: firstName, setValue: setFirstName, placeholder: t("placeholder.firstName") },
+								]
+							: [
+									{ label: t("firstName"), value: firstName, setValue: setFirstName, placeholder: t("placeholder.firstName") },
+									{ label: t("lastName"), value: lastName, setValue: setLastName, placeholder: t("placeholder.lastName") },
+								]),
+					].map((field) => (
+						<div key={field.label} className="flex-1 flex flex-col gap-2">
+							<label className="text-xs font-bold uppercase tracking-widest opacity-60">{field.label}</label>
+							<input type="text" placeholder={field.placeholder} value={field.value} onChange={(e) => field.setValue(e.target.value)} required className="bg-white border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#1754cf]" />
+						</div>
+					))}
 				</div>
 
 				<div className="flex flex-col gap-2 md:col-span-2">

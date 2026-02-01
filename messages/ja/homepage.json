@@ -126,7 +126,7 @@
         "header": "無料入門ワークショップ",
         "workshops": {
             "w1": {
-                "date": "24",
+                "date": "24日",
                 "month": "2月",
                 "title": "英語・バイリンガル",
                 "detail": "Zoom • 20:00-21:30",
@@ -134,7 +134,7 @@
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w2": {
-                "date": "26",
+                "date": "26日",
                 "month": "2月",
                 "title": "日本語",
                 "detail": "Zoom • 19:30-21:00",

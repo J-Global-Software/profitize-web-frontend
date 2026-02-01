@@ -43,7 +43,17 @@ export default function FreeConsultationClient() {
 		return { firstDay, totalDays };
 	}, [currentMonth]);
 
-	const monthLabel = format(currentMonth, "MMMM yyyy", { locale: dateFnsLocale });
+	function getMonthLabel(currentMonth: Date) {
+		if (locale === "ja") {
+			// Year first, numeric month
+			return format(currentMonth, "yyyy年 MM月", { locale: dateFnsLocale });
+			// or with Japanese characters:
+			// return format(currentMonth, "yyyy年 MM月", { locale: locales[locale] });
+		} else {
+			// English: full month name + year
+			return format(currentMonth, "MMMM yyyy", { locale: dateFnsLocale });
+		}
+	}
 	const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
 
 	/* ---------------- Available slots logic ---------------- */
@@ -160,7 +170,7 @@ export default function FreeConsultationClient() {
 					<div className="grid grid-cols-1 md:grid-cols-12 min-h-[460px]">
 						<div className="md:col-span-6 p-5 md:p-10 border-r border-gray-100">
 							<div className="flex items-center justify-between mb-8">
-								<h2 className="text-2xl font-bold capitalize">{monthLabel}</h2>
+								<h2 className="text-2xl font-bold capitalize">{getMonthLabel(currentMonth)}</h2>
 								<div className="flex gap-2">
 									<button disabled={isCurrentMonth} onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className={`p-2 rounded-lg transition ${isCurrentMonth ? "opacity-20 cursor-not-allowed" : "hover:bg-gray-100"}`}>
 										←
@@ -301,9 +311,20 @@ export default function FreeConsultationClient() {
 								<h2 className="text-2xl font-black mb-6">{t("booking.details")}</h2>
 								<form className="grid gap-6" onSubmit={(e) => e.preventDefault()}>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										<Input label={t("booking.firstName")} value={firstName} onChange={setFirstName} required />
-										<Input label={t("booking.lastName")} value={lastName} onChange={setLastName} required />
+										{(locale === "ja"
+											? [
+													{ label: t("booking.lastName"), value: lastName, onChange: setLastName },
+													{ label: t("booking.firstName"), value: firstName, onChange: setFirstName },
+												]
+											: [
+													{ label: t("booking.firstName"), value: firstName, onChange: setFirstName },
+													{ label: t("booking.lastName"), value: lastName, onChange: setLastName },
+												]
+										).map((field) => (
+											<Input key={field.label} label={field.label} value={field.value} onChange={field.onChange} required />
+										))}
 									</div>
+
 									<Input label={t("booking.email")} type="email" value={email} onChange={setEmail} required />
 									<textarea rows={4} placeholder={t("booking.messagePlaceholder")} value={message} onChange={(e) => setMessage(e.target.value)} className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1754cf]/30" />
 								</form>

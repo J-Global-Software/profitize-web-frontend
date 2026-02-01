@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
 		remotePatterns: [
 			{
 				protocol: "https",
-				hostname: "www.j-globalbizschool.com",
+				hostname: "www.profitize.jp",
 			},
 
 			{

@@ -1,6 +1,6 @@
 {
     "email": {
-        "subject": "『J-Global Business School』コーチングセッション予約完了のお知らせ",
+        "subject": "『Profitize』コーチングセッション予約完了のお知らせ",
         "header": "コーチングのご予約ありがとうございます",
         "badge": "予約確定",
         "hi": "{name}様",
@@ -17,7 +17,7 @@
         "contact": "Googleカレンダーに事前に追加いただくか、開始時間になりましたらZoomリンクよりご参加ください\nご不明点や予約内容の変更をご希望の場合は、下記メールアドレスまでお気軽にご連絡ください。",
         "supportEmail": "jon.lynch@profitize.jp",
         "addToCalendar": "カレンダーに追加",
-        "teamName": "J-Globalチーム",
+        "teamName": "Profitizeチーム",
         "calendar": {
             "addToCalendar": "カレンダーに追加:",
             "google": "Google カレンダー",

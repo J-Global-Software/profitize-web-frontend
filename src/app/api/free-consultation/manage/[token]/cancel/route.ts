@@ -1,19 +1,9 @@
-import { Resend } from "resend";
 import { NextRequest } from "next/server";
 import { loadServerMessages } from "../../../../../../../messages/server";
 import { query } from "@/src/utils/neon";
 import { deleteCalendarEvent } from "@/src/utils/google-calendar";
 import { deleteZoomMeeting } from "@/src/utils/zoom";
-
-// HTML escape utility
-function escapeHtml(str: string) {
-	return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-// Safe interpolate for templates
-function interpolate(template: string, values: Record<string, string>) {
-	return template.replace(/\{(\w+)\}/g, (_, key) => escapeHtml(values[key] ?? ""));
-}
+import { sendCancelUserEmail, sendCancelLecturerEmail } from "@/src/utils/email/service";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	const locale = req.headers.get("x-locale") || "ja";
@@ -117,78 +107,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		);
 
 		// 9️⃣ Send emails
-		const resend = new Resend(process.env.RESEND_API_KEY);
-
-		// User email
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: booking.email,
-			subject: messages.server.email.cancelledSubject,
-			html: `
-<!DOCTYPE html>
-<html lang="${locale}">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-<body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
-<tr><td align="center">
-<table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
-<tr><td style="padding:48px; text-align:center;">
-<h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${escapeHtml(messages.server.email.cancelledHeader)}</h1>
-</td></tr>
-<tr><td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-<p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? booking.last_name : booking.first_name })}</p>
-<p>${escapeHtml(messages.server.email.cancelledIntro)}</p>
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
-<tr>
-<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px;">${escapeHtml(messages.server.email.serviceBooked)}</td>
-<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.serviceName)}</td>
-</tr>
-<tr>
-<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.staff)}</td>
-<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.staffName)}</td>
-</tr>
-<tr>
-<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.platform)}</td>
-<td style="font-size:15px; font-weight:600; color:#1e293b;">${escapeHtml(messages.server.email.platformValue)}</td>
-</tr>
-<tr>
-<td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${escapeHtml(messages.server.email.dateTimeLabel)}</td>
-<td style="font-size:15px; font-weight:600; color:#1e293b;">${new Date(booking.event_date).toLocaleString(locale === "ja" ? "ja-JP" : "en-US", { timeZone: "Asia/Tokyo", dateStyle: "long", timeStyle: "short" })} JST</td>
-</tr>
-</table>
-<p>${escapeHtml(messages.server.email.cancelledAction)}</p>
-<p style="margin-top:32px; font-size:13px; line-height:1.6; color:#64748b;">
-<a href="mailto:${escapeHtml(messages.server.email.supportEmail)}" style="color:#1e40af; font-weight:600; text-decoration:none;">${escapeHtml(messages.server.email.supportEmail)}</a>
-</p>
-<p style="margin-top:32px;">— ${escapeHtml(messages.server.email.teamName)}</p>
-</td></tr>
-</table>
-</td></tr></table>
-</body>
-</html>
-`,
+		// Send user cancellation email
+		await sendCancelUserEmail({
+			locale,
+			firstName: booking.first_name,
+			lastName: booking.last_name,
+			email: booking.email,
+			eventDate: new Date(booking.event_date),
+			messages,
+			fromEmail: process.env.FROM_EMAIL || "",
+			toEmail: booking.email,
 		});
 
-		// Lecturer email
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: process.env.LECTURER_EMAIL || "",
-			subject: "(Profitize) Consultation Session Cancelled by User",
-			html: `
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body>
-<p>Name: ${escapeHtml(booking.first_name)} ${escapeHtml(booking.last_name)}</p>
-<p>Email: ${escapeHtml(booking.email)}</p>
-<p>Date: ${new Date(booking.event_date).toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "long", timeStyle: "short" })} JST</p>
-</body>
-</html>
-`,
-		});
+		// Send lecturer cancellation notification
+		await sendCancelLecturerEmail(booking.first_name, booking.last_name, booking.email, new Date(booking.event_date), process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || "");
 
 		return new Response(JSON.stringify({ success: true, message: "Booking cancelled successfully" }), { status: 200, headers: { "Content-Type": "application/json" } });
 	} catch (error) {

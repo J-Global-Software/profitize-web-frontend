@@ -19,7 +19,7 @@ export default function Industries() {
 	const t = useTranslations("homepage");
 
 	return (
-		<section id="industries" className="bg-blue-50 py-8 sm:py-12">
+		<section id="industries" className="bg-[#f7f7ff] py-8 sm:py-12">
 			<div className="max-w-[1120px] mx-auto px-4 sm:px-6">
 				{/* ================= Header ================= */}
 				<motion.div className="flex flex-col items-center text-center mb-12 sm:mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>

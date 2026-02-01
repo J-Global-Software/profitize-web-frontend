@@ -1,4 +1,3 @@
-import { Resend } from "resend";
 import { NextRequest } from "next/server";
 import { loadServerMessages } from "@/messages/server";
 import { query } from "@/src/utils/neon";
@@ -6,13 +5,11 @@ import { Validators } from "@/src/utils/validation/validators";
 import { deleteCalendarEvent, getCalendarAuth } from "@/src/utils/google-calendar";
 import { createZoomMeeting, deleteZoomMeeting } from "@/src/utils/zoom";
 import { isValidationError } from "@/src/utils/validation/ErrorValidator";
+import { sendRescheduleUserEmail, sendRescheduleLecturerEmail } from "@/src/utils/email/service";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
 	const locale = req.headers.get("x-locale") || "ja";
 	const messages = await loadServerMessages(locale);
-	function interpolate(template: string, values: Record<string, string>) {
-		return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
-	}
 	try {
 		const { token } = await context.params;
 
@@ -174,231 +171,26 @@ Zoom link: ${userZoomLink || ""}
 		// ============================================================
 		// SEND EMAIL NOTIFICATIONS
 		// ============================================================
-		const resend = new Resend(process.env.RESEND_API_KEY);
 		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${newCancellationToken}`;
 
-		// Calendar URLs
-		const formatForGoogle = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
-		const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Free+Consultation+Session&dates=${formatForGoogle(newStart)}/${formatForGoogle(newEnd)}&details=Your+free+consultation+session&location=Online`;
-		const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=Free+Consultation+Session&startdt=${newStart.toISOString()}&enddt=${newEnd.toISOString()}&body=Your+free+consultation+session&location=Online`;
-
-		// Generate ICS file
-		const generateICS = ({ title, description, location }: { start: Date; end: Date; title: string; description: string; location: string }) => {
-			const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
-			return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Profitize//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(newStart)}`, `DTEND:${formatICSDate(newEnd)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-		};
-
-		const icsContent = generateICS({
-			start: newStart,
-			end: newEnd,
-			title: "Free Consultation Session",
-			description: "Your free consultation session",
-			location: "Online",
+		// Send user reschedule email
+		await sendRescheduleUserEmail({
+			locale,
+			firstName: oldBooking.first_name,
+			lastName: oldBooking.last_name,
+			email: oldBooking.email,
+			oldEventDate,
+			newStart,
+			newEnd,
+			userZoomLink,
+			managementUrl,
+			messages,
+			fromEmail: process.env.FROM_EMAIL || "",
+			toEmail: oldBooking.email,
 		});
 
-		const text = `
-${interpolate(messages.server.email.hi, { name: oldBooking.last_name })}
-
-${messages.server.email.rescheduledIntro}
-
-${messages.server.email.originalDate}: ${oldEventDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST
-${messages.server.email.newDate}: ${newStart.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST
-
-Zoomリンク: ${userZoomLink || ""}
-予約内容の確認・変更はこちら: ${managementUrl}
-
-${messages.server.email.contact}
-メール: ${messages.server.email.supportEmail}
-
-— ${messages.server.email.teamName}
-
-公式ウェブサイト: https://profitize.jp/
-プライバシーポリシー: https://profitize.jp/privacy-policy/
-`;
-
-		// Email to user
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: oldBooking.email,
-			subject: messages.server.email.rescheduledSubject, // from JSON
-			text: text,
-			html: `
-<!DOCTYPE html>
-<html lang="${locale}">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-<body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
-
-<!-- Wrapper -->
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
-  <tr>
-    <td align="center">
-      <!-- Container -->
-      <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
-        
-        <!-- Header -->
-        <tr>
-          <td style="padding:48px; text-align:center;">
-            <h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a;">${messages.server.email.rescheduledHeader}</h1>
-          </td>
-        </tr>
-
-        <!-- Content -->
-        <tr>
-          <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
-            <p>${interpolate(messages.server.email.hi, { name: locale === "ja" ? oldBooking.last_name : oldBooking.first_name })}</p>
-            <p>${messages.server.email.rescheduledIntro}</p>
-
-            <!-- Detail Card -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
-              <tr>
-                <td style="font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; padding-bottom:4px;">${messages.server.email.originalDate}</td>
-                <td style="font-weight:600; color:#1e293b; font-size:15px;">${oldEventDate.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
-              </tr>
-              <tr>
-                <td style="font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; padding-top:8px; padding-bottom:4px;">${messages.server.email.newDate}</td>
-                <td style="font-weight:600; color:#1e293b; font-size:15px;">${newStart.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</td>
-              </tr>
-            </table>
-
-            <!-- Zoom Button (Centered on Page) -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
-              <tr>
-                <td align="center">
-                  <a href="${userZoomLink}" style="display:inline-block; background-color:#0f172a; color:#ffffff !important; text-decoration:none !important; padding:13px 24px; border-radius:10px; font-weight:600; font-size:15px;">
-                    ${messages.server.email.zoomLink}
-                  </a>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Reschedule Link -->
-            <p style="text-align:center; margin-top:12px; font-size:13px; color:#64748b;">
-              <a href="${managementUrl}" style="text-decoration:none; color:#64748b; font-weight:500; border-bottom:1px solid transparent;">${messages.server.email.changeBooking}</a>
-            </p>
-
-            <!-- Calendar Links -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
-              <tr>
-                <td align="center">
-                  <a href="${calendarUrl}" style="font-size:12px; color:#0f172a; text-decoration:none; font-weight:700; margin:0 6px;">${messages.server.email.calendar.google}</a>
-                  <a href="${outlookUrl}" style="font-size:12px; color:#0f172a; text-decoration:none; font-weight:700; margin:0 6px;">${messages.server.email.calendar.outlook}</a>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Contact -->
-            <p style="margin-top:32px; font-size:14px; color:#666;">
-              ${messages.server.email.contact} 
-              <a href="mailto:${messages.server.email.supportEmail}" style="color:#2563eb; text-decoration:none;">${messages.server.email.supportEmail}</a>
-            </p>
-
-            <p style="margin-top:32px;">— ${messages.server.email.teamName}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Footer -->
-      <table width="540" cellpadding="0" cellspacing="0" border="0" style="margin:40px auto; text-align:center; font-family:Arial, sans-serif; font-size:12px; color:#94a3b8;">
-        <tr>
-          <td>
-            <img src="https://profitize.jp/images/logo.png" alt="Profitize" style="max-width:120px; margin-bottom:16px; opacity:0.9; display:block; margin-left:auto; margin-right:auto;">
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-bottom:10px;">
-            <a href="${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}" style="color:#94a3b8; text-decoration:none; margin-right:15px;">${messages.server.email.footerWebsite}</a>
-            <a href="${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}" style="color:#94a3b8; text-decoration:none;">${messages.server.email.footerPrivacy}</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:11px; color:#cbd5e1; line-height:1.6;">
-            &copy; 2026 Profitize Inc.<br>
-            ${messages.server.email.footerCopyright}
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-
-</body>
-</html>
-
-`,
-			attachments: [
-				{
-					filename: "consultation-session.ics",
-					content: icsContent,
-					contentType: "text/calendar; charset=utf-8",
-				},
-			],
-		});
-
-		// Email to lecturer
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL || "",
-			to: process.env.LECTURER_EMAIL || "",
-			subject: "(Profitize) Consultation Session Rescheduled by User",
-			html: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  body { margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
-  .wrapper { width:100%; padding:40px 0; }
-  .container { max-width:540px; margin:0 auto; background-color:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden; padding:32px; }
-  h2 { margin-top:0; font-size:22px; color:#0f172a; text-align:center; }
-  .card { background:#f8fafc; border-radius:12px; padding:20px; margin:20px 0; border:1px solid #f1f5f9; }
-  .label { font-weight:600; color:#94a3b8; text-transform:uppercase; font-size:12px; margin-bottom:4px; }
-  .value { font-weight:600; color:#1e293b; font-size:15px; }
-  .notes { font-size:14px; color:#475569; line-height:1.6; margin-top:20px; }
-  @media screen and (max-width:600px) {
-    .container { padding:24px; }
-  }
-</style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <h2>Consultation Session Rescheduled</h2>
-
-      <p>A user has rescheduled their consultation session.</p>
-
-      <div class="card">
-        <p class="label">User Details</p>
-        <p class="value"><strong>Name:</strong> ${oldBooking.first_name} ${oldBooking.last_name}</p>
-        <p class="value"><strong>Email:</strong> ${oldBooking.email}</p>
-        ${oldBooking.phone_number ? `<p class="value"><strong>Phone:</strong> ${oldBooking.phone_number}</p>` : ""}
-      </div>
-
-      <div class="card">
-        <p class="label">Session Dates</p>
-        <p class="value"><strong>Original Date:</strong> ${oldEventDate.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</p>
-        <p class="value"><strong>New Date:</strong> ${newStart.toLocaleString("en-US", { timeZone: "Asia/Tokyo", dateStyle: "full", timeStyle: "short" })} JST</p>
-      </div>
-
-      <div class="notes">
-        <ul>
-          <li>Old calendar event and Zoom meeting have been deleted</li>
-          <li>New calendar event has been created</li>
-          <li>New Zoom meeting details are in the calendar description</li>
-        </ul>
-      </div>
-
-      <p class="notes" style="margin-top:30px;">— Booking Notification System</p>
-    </div>
-  </div>
-</body>
-</html>
-
-
-`,
-		});
+		// Send lecturer reschedule notification
+		await sendRescheduleLecturerEmail(oldBooking.first_name, oldBooking.last_name, oldEventDate, newStart, process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || "");
 
 		return new Response(
 			JSON.stringify({

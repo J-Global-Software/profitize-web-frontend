@@ -10,7 +10,7 @@ export default function Resources() {
 	const workshops = [{ key: "w1" }, { key: "w2" }, { key: "w3" }, { key: "w4" }];
 
 	return (
-		<section className="bg-blue-50 py-20" id="resources">
+		<section className="bg-[#f7f7ff] py-20" id="resources">
 			<div className="max-w-[1200px] mx-auto px-6">
 				{/* Header */}
 				<motion.h2 className="mt-4 text-4xl md:text-5xl font-black leading-tight text-gray-900 mb-15" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.5, ease: "easeOut" }}>

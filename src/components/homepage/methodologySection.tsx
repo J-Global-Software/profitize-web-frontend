@@ -27,7 +27,7 @@ export default function MethodologySection() {
 	const imageSrc = `/images/${String(step + 1).padStart(2, "0")}.jpg`;
 
 	return (
-		<section id="methodology" className="pt-24 pb-10 bg-blue-50">
+		<section id="methodology" className="pt-24 pb-10 bg-[#f7f7ff]">
 			{/* Header */}
 			<motion.div className="max-w-[1100px] mx-auto px-6 text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
 				<h2 className="text-4xl md:text-5xl font-black text-[#0e121b]">{t("methodology.header.title")}</h2>

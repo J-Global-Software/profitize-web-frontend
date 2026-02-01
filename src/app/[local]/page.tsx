@@ -20,7 +20,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: AppLoc
 
 export default function GlobalConsulting() {
 	return (
-		<div className="bg-[#f4f9ff] text-[#111318] min-h-screen">
+		<div className="bg-[#f7f7ff] text-[#111318] min-h-screen">
 			{/* Header */}
 			<Header />
 

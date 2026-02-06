@@ -15,6 +15,13 @@ import Header from "@/src/components/homepage/headerSection";
 
 /* ───────────── Types ───────────── */
 
+interface TimeSlot {
+	displayTime: string;
+	displayDate: string;
+	jstTime: string;
+	jstDate: string;
+}
+
 interface Booking {
 	firstName: string;
 	lastName: string;
@@ -30,11 +37,12 @@ interface ManageBookingResponse {
 }
 
 interface AvailableSlotsResponse {
-	availableSlots: string[];
+	availableSlots: TimeSlot[];
+	timezone: string;
 }
 
 export default function ManageBookingPage() {
-	const t = useTranslations("consultation"); // Single translation hook
+	const t = useTranslations("consultation");
 	const locale = useLocale();
 
 	const params = useParams<{ token: string }>();
@@ -49,22 +57,37 @@ export default function ManageBookingPage() {
 	const [error, setError] = useState<string | null>(null);
 
 	const [showReschedule, setShowReschedule] = useState(false);
-	const [selectedDate, setSelectedDate] = useState<Date>();
-	const [selectedTime, setSelectedTime] = useState<string | null>(null);
-	const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-	const [loadingTimes, setLoadingTimes] = useState(false);
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+	const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+	const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+	const [loadingSlots, setLoadingSlots] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 	const [success, setSuccess] = useState<"reschedule" | "cancel" | null>(null);
 	const [showAllSlots, setShowAllSlots] = useState(false);
+	const [userTimezone, setUserTimezone] = useState<string>("");
+
+	const [isClient, setIsClient] = useState(false);
 
 	/* ───────────── Calendar State ───────────── */
-	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const [currentMonth, setCurrentMonth] = useState(() => {
+		const d = new Date();
+		return new Date(d.getFullYear(), d.getMonth(), 1);
+	});
+
 	const today = useMemo(() => {
 		const d = new Date();
 		d.setHours(0, 0, 0, 0);
 		return d;
 	}, []);
+
+	function getMonthLabel(currentMonth: Date) {
+		if (locale === "ja") {
+			return format(currentMonth, "yyyy年 MM月", { locale: dateFnsLocale });
+		} else {
+			return format(currentMonth, "MMMM yyyy", { locale: dateFnsLocale });
+		}
+	}
 
 	const daysInMonth = useMemo(() => {
 		const year = currentMonth.getFullYear();
@@ -74,7 +97,22 @@ export default function ManageBookingPage() {
 		return { firstDay, totalDays };
 	}, [currentMonth]);
 
+	const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
+
 	/* ───────────── Effects ───────────── */
+
+	// Detect user's timezone
+	useEffect(() => {
+		setIsClient(true);
+		try {
+			const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			setUserTimezone(tz);
+		} catch (error) {
+			console.error("Failed to detect timezone:", error);
+			setUserTimezone("Asia/Tokyo");
+		}
+	}, []);
+
 	useEffect(() => {
 		const fetchBooking = async () => {
 			try {
@@ -96,41 +134,68 @@ export default function ManageBookingPage() {
 	}, [token, t]);
 
 	useEffect(() => {
-		if (!selectedDate) return;
-		setSelectedTime(null);
-		setAvailableTimes([]);
-		setLoadingTimes(true);
+		if (!selectedDate || !userTimezone) return;
 
-		fetch("/api/free-consultation/available-slots/", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ date: format(selectedDate, "yyyy-MM-dd") }),
-		})
-			.then((res) => res.json())
-			.then((data: AvailableSlotsResponse) => setAvailableTimes(data.availableSlots ?? []))
-			.finally(() => setLoadingTimes(false));
-	}, [selectedDate]);
+		const fetchSlots = async () => {
+			setLoadingSlots(true);
+			setAvailableSlots([]);
+			setSelectedSlot(null);
 
+			try {
+				const res = await fetch("/api/free-consultation/available-slots/", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						date: format(selectedDate, "yyyy-MM-dd"),
+						timezone: userTimezone,
+					}),
+				});
+				const data: AvailableSlotsResponse = await res.json();
+				setAvailableSlots(data.availableSlots || []);
+			} catch (err) {
+				console.error("Failed to fetch slots", err);
+				setAvailableSlots([]);
+			} finally {
+				setLoadingSlots(false);
+			}
+		};
+
+		fetchSlots();
+	}, [selectedDate, userTimezone]);
+
+	/* ───────────── Slot preview logic ───────────── */
 	const previewCount = 6;
 	const previewSlots = useMemo(() => {
-		if (!availableTimes.length) return [];
-		if (selectedTime) {
-			return [...availableTimes.slice(0, previewCount).filter((slot) => slot !== selectedTime), selectedTime];
-		}
-		return availableTimes.slice(0, previewCount);
-	}, [availableTimes, selectedTime]);
+		if (!selectedSlot) return availableSlots.slice(0, previewCount);
 
-	const extraSlots = useMemo(() => {
-		return availableTimes.filter((slot) => !previewSlots.includes(slot));
-	}, [availableTimes, previewSlots]);
+		const firstSlots = availableSlots.slice(0, previewCount);
+		// If selected slot is in first 6, just return them
+		if (firstSlots.some((slot) => slot.displayTime === selectedSlot.displayTime)) {
+			return firstSlots;
+		}
+		// Otherwise, replace the last slot with the selected one
+		return [...firstSlots.slice(0, previewCount - 1), selectedSlot];
+	}, [availableSlots, selectedSlot]);
+
+	const extraSlots = availableSlots.filter((slot) => !previewSlots.includes(slot));
 
 	const handleAction = async (type: "reschedule" | "cancel") => {
 		setSubmitting(true);
 		try {
 			const res = await fetch(`/api/free-consultation/manage/${token}/${type}`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: type === "reschedule" ? JSON.stringify({ date: format(selectedDate as Date, "yyyy-MM-dd"), time: selectedTime }) : null,
+				headers: {
+					"Content-Type": "application/json",
+					"x-locale": locale,
+				},
+				body:
+					type === "reschedule" && selectedSlot
+						? JSON.stringify({
+								date: selectedSlot.jstDate,
+								time: selectedSlot.jstTime,
+								timezone: userTimezone,
+							})
+						: null,
 			});
 
 			if (!res.ok) throw new Error();
@@ -163,6 +228,16 @@ export default function ManageBookingPage() {
 
 	if (!booking) return null;
 
+	// Convert booking event date to user's timezone for display
+	const bookingDate = new Date(booking.eventDate);
+	const displayDateTime = userTimezone
+		? bookingDate.toLocaleString(locale === "ja" ? "ja-JP" : "en-US", {
+				timeZone: userTimezone,
+				dateStyle: "full",
+				timeStyle: "short",
+			})
+		: format(bookingDate, "PPPP p", { locale: dateFnsLocale });
+
 	if (success) {
 		const isReschedule = success === "reschedule";
 		return (
@@ -175,11 +250,12 @@ export default function ManageBookingPage() {
 						</div>
 						<h1 className="text-3xl font-black text-gray-900 mb-3">{isReschedule ? t("manage.bookingRescheduled") : t("manage.bookingCancelled")}</h1>
 						<p className="text-gray-500 text-sm mb-8 leading-relaxed">{isReschedule ? t("manage.rescheduleSuccess") : t("manage.cancelSuccess")}</p>
-						{isReschedule && selectedDate && selectedTime && (
+						{isReschedule && selectedSlot && (
 							<div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
 								<p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{t("manage.newDateTime")}</p>
-								<p className="font-bold text-gray-900">{format(new Date(booking.eventDate), "PPPP", { locale: dateFnsLocale })}</p>
-								<p className="text-gray-500">{selectedTime}</p>
+								<p className="font-bold text-gray-900">{selectedSlot.displayDate}</p>
+								<p className="text-gray-500">{selectedSlot.displayTime}</p>
+								{userTimezone !== "Asia/Tokyo" && <p className="text-xs text-gray-400 mt-2">JST: {selectedSlot.jstTime}</p>}
 							</div>
 						)}
 						<div className="flex flex-col gap-3">
@@ -217,9 +293,9 @@ export default function ManageBookingPage() {
 												<div className="flex flex-col">
 													<div className="flex items-center gap-2">
 														<span className="material-symbols-outlined text-[#1754cf] text-xl">calendar_today</span>
-														<span className="text-lg font-semibold text-gray-700">{format(new Date(booking.eventDate), "PPPP", { locale: dateFnsLocale })}</span>
+														<span className="text-lg font-semibold text-gray-700">{displayDateTime}</span>
 													</div>
-													<p className="text-sm text-gray-500 ml-7 mt-1">{format(new Date(booking.eventDate), "p")}</p>
+													{userTimezone && userTimezone !== "Asia/Tokyo" && <p className="text-xs text-gray-500 mt-1">{t("booking.timezone_notice", { timezone: userTimezone })}</p>}
 												</div>
 											}
 										/>
@@ -262,11 +338,11 @@ export default function ManageBookingPage() {
 						</button>
 						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
 							<div className="grid grid-cols-1 md:grid-cols-12 min-h-[460px]">
-								<div className="md:col-span-6 border-r border-gray-100 p-10">
+								<div className="md:col-span-6 border-r border-gray-100 p-5 md:p-10">
 									<div className="flex items-center justify-between mb-8">
-										<h2 className="text-2xl font-bold">{format(currentMonth, "MMMM yyyy")}</h2>
+										<h2 className="text-2xl font-bold capitalize">{getMonthLabel(currentMonth)}</h2>
 										<div className="flex gap-2">
-											<button disabled={currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()} onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-20">
+											<button disabled={isCurrentMonth} onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className={`p-2 rounded-lg transition ${isCurrentMonth ? "opacity-20 cursor-not-allowed" : "hover:bg-gray-100"}`}>
 												←
 											</button>
 											<button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-2 rounded-lg hover:bg-gray-100">
@@ -286,9 +362,25 @@ export default function ManageBookingPage() {
 										{Array.from({ length: daysInMonth.totalDays }).map((_, i) => {
 											const day = i + 1;
 											const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-											const isPast = date < today;
+											let isPast = false;
+											if (isClient) {
+												const localToday = new Date();
+												localToday.setHours(0, 0, 0, 0);
+												const localDate = new Date(date);
+												localDate.setHours(0, 0, 0, 0);
+												isPast = localDate.getTime() < localToday.getTime();
+											}
+											const isSelected = selectedDate?.toDateString() === date.toDateString();
+
 											return (
-												<button key={day} disabled={isPast} onClick={() => setSelectedDate(date)} className={`py-3 text-sm font-medium rounded-xl transition ${selectedDate?.toDateString() === date.toDateString() ? "bg-[#1754cf] text-white" : isPast ? "text-gray-300 cursor-not-allowed" : "hover:bg-[#f0f4ff]"}`}>
+												<button
+													key={day + i}
+													disabled={isPast}
+													onClick={() => setSelectedDate(date)}
+													className={`py-3 text-sm font-medium rounded-xl transition
+													${isSelected ? "bg-[#1754cf] text-white shadow-lg shadow-[#1754cf]/20" : isPast ? "text-gray-300 bg-transparent cursor-not-allowed" : "hover:bg-[#f0f4ff]"}
+												`}
+												>
 													{day}
 												</button>
 											);
@@ -297,34 +389,41 @@ export default function ManageBookingPage() {
 								</div>
 
 								<div className="md:col-span-6 bg-[#f8f9fa] flex flex-col">
-									<div className="p-6 pb-4">
-										<p className="text-[10px] font-black uppercase tracking-widest text-[#1754cf]">{selectedDate ? format(selectedDate, "PP") : t("manage.selectDateShort")}</p>
+									<div className="p-5 md:p-10 pb-4">
+										<p className="text-[10px] font-black uppercase tracking-widest text-[#1754cf]">{selectedDate ? format(selectedDate, "PPPP", { locale: dateFnsLocale }) : t("manage.selectDateShort")}</p>
 										<h3 className="text-xl font-bold">{t("manage.availableSlots")}</h3>
+										{userTimezone && userTimezone !== "Asia/Tokyo" && <p className="text-xs text-gray-500 mt-1">{t("booking.timezone_notice", { timezone: userTimezone })}</p>}
 									</div>
-									<div className="px-6 grid grid-cols-2 gap-3 min-h-[200px]">
-										{loadingTimes ? (
+									<div className="px-5 md:px-10 grid grid-cols-2 gap-3 min-h-[200px]">
+										{loadingSlots ? (
 											<div className="col-span-2 flex justify-center items-center">
 												<div className="w-8 h-8 border-4 border-[#1754cf]/30 border-t-[#1754cf] rounded-full animate-spin" />
 											</div>
-										) : availableTimes.length === 0 ? (
-											<div className="col-span-2 text-gray-400 font-bold text-center">{t("manage.selectDate")}</div>
+										) : previewSlots.length === 0 ? (
+											<div className="col-span-2 text-gray-400 font-bold text-center">{t("booking.noSlots")}</div>
 										) : (
 											<>
-												{previewSlots.map((time) => (
-													<button key={time} onClick={() => setSelectedTime(time)} className={`px-4 py-3 rounded-xl text-left border ${selectedTime === time ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent"}`}>
-														{time}
+												{previewSlots.map((slot) => (
+													<button
+														key={slot.displayTime}
+														onClick={() => setSelectedSlot(slot)}
+														className={`px-4 py-3 rounded-xl text-left transition border
+														${selectedSlot?.displayTime === slot.displayTime ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent hover:border-[#1754cf]/30"}`}
+													>
+														<div className="text-sm">{slot.displayTime}</div>
+														{userTimezone && userTimezone !== "Asia/Tokyo" && <div className="text-[10px] text-gray-400 font-medium mt-1">JST: {slot.jstTime}</div>}
 													</button>
 												))}
 												{extraSlots.length > 0 && !showAllSlots && (
 													<button onClick={() => setShowAllSlots(true)} className="px-4 py-3 rounded-xl text-left font-bold border border-gray-300 hover:bg-gray-100 col-span-2">
-														+{extraSlots.length} more
+														+{extraSlots.length} {t("common.more")}
 													</button>
 												)}
 											</>
 										)}
 									</div>
-									<div className="mt-auto p-6 pt-4 border-t border-gray-100 bg-white/60 flex justify-end">
-										<button disabled={!selectedTime || submitting} onClick={() => handleAction("reschedule")} className="w-full sm:w-auto px-12 py-4 bg-[#1754cf] disabled:bg-gray-200 text-white rounded-2xl font-bold transition-all">
+									<div className="mt-auto p-5 md:p-10 pt-6 border-t border-gray-100 bg-white/60">
+										<button disabled={!selectedDate || !selectedSlot || submitting} onClick={() => handleAction("reschedule")} className="w-full bg-[#1754cf] text-white font-bold py-4 rounded-xl shadow-lg disabled:opacity-30">
 											{submitting ? t("common.updating") : t("manage.confirmReschedule")}
 										</button>
 									</div>
@@ -335,27 +434,43 @@ export default function ManageBookingPage() {
 				)}
 
 				{showAllSlots && (
-					<div className="fixed inset-0 z-20 flex items-center justify-center bg-black/50" onClick={() => setShowAllSlots(false)}>
-						<div className="bg-white rounded-2xl p-6 max-w-[700px] w-full max-h-[80vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
-							<div className="flex items-center justify-between mb-4">
-								<h3 className="text-xl font-bold">{t("manage.allSlots")}</h3>
-								<button onClick={() => setShowAllSlots(false)} className="text-gray-500 text-2xl font-bold">
-									×
+					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setShowAllSlots(false)}>
+						<div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
+
+						<div className="bg-white rounded-[2rem] w-full max-w-[640px] max-h-[85vh] overflow-hidden shadow-2xl relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+							<div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-white sticky top-0 z-10">
+								<div>
+									<h3 className="text-xl font-black text-gray-900">{t("manage.allSlots")}</h3>
+									<p className="text-xs text-gray-400 font-medium mt-1">{selectedDate ? format(selectedDate, "PPPP", { locale: dateFnsLocale }) : ""}</p>
+								</div>
+								<button onClick={() => setShowAllSlots(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all">
+									<span className="material-symbols-outlined">close</span>
 								</button>
 							</div>
-							<div className="grid grid-cols-3 gap-3">
-								{availableTimes.map((time) => (
-									<button
-										key={time}
-										onClick={() => {
-											setSelectedTime(time);
-											setShowAllSlots(false);
-										}}
-										className={`px-4 py-3 rounded-xl border ${selectedTime === time ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent"}`}
-									>
-										{time}
-									</button>
-								))}
+
+							<div className="p-8 overflow-y-auto custom-scrollbar">
+								<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+									{availableSlots.map((slot) => {
+										const isSelected = selectedSlot?.displayTime === slot.displayTime;
+										return (
+											<button
+												key={slot.displayTime}
+												onClick={() => {
+													setSelectedSlot(slot);
+													setShowAllSlots(false);
+												}}
+												className={`group flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-200 border-2 ${isSelected ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf]" : "border-gray-50 bg-gray-50/50 hover:border-gray-200 hover:bg-white text-gray-600"}`}
+											>
+												<span className="text-sm font-bold tracking-tight">{slot.displayTime}</span>
+												{userTimezone && userTimezone !== "Asia/Tokyo" && <span className={`text-[10px] mt-1 font-medium px-2 py-0.5 rounded-full transition-colors ${isSelected ? "bg-[#1754cf]/10 text-[#1754cf]" : "text-gray-400 bg-gray-200/50"}`}>JST {slot.jstTime}</span>}
+											</button>
+										);
+									})}
+								</div>
+							</div>
+
+							<div className="px-8 py-4 bg-gray-50/50 border-t border-gray-50 text-center">
+								<p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{userTimezone ? `Timezone: ${userTimezone.replace("_", " ")}` : ""}</p>
 							</div>
 						</div>
 					</div>

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 
 		// Parse request body
 		const body = await req.json();
-		const { date, time } = body;
+		const { date, time, timezone } = body;
 
 		// Validation
 		Validators.required(date, "Date");
@@ -53,15 +53,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		const now = new Date();
 		const hoursUntilOldEvent = (oldEventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-		if (hoursUntilOldEvent < 6) {
-			return new Response(JSON.stringify({ error: "Cannot reschedule within 24 hours of the original event" }), { status: 400 });
+		if (hoursUntilOldEvent < 4) {
+			return new Response(JSON.stringify({ error: "Cannot reschedule within 4 hours of the original event" }), { status: 400 });
 		}
 
 		if (oldEventDate < now) {
 			return new Response(JSON.stringify({ error: "Cannot reschedule a past event" }), { status: 400 });
 		}
 
-		// Validate new date/time
+		// ✅ FIXED: Create JST date from the date/time sent by client (which is already JST)
 		const newStart = new Date(`${date}T${time}:00+09:00`);
 		const newEnd = new Date(newStart.getTime() + 30 * 60 * 1000);
 
@@ -114,15 +114,19 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			}
 		}
 
-		// Create new Zoom meeting
-		const startUTC = new Date(newStart.getTime() - newStart.getTimezoneOffset() * 60000);
-		const { meeting, registrantLinks } = await createZoomMeeting(`(Profitize) Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`, startUTC, 30, [
-			{
-				email: oldBooking.email,
-				firstName: oldBooking.first_name,
-				lastName: oldBooking.last_name,
-			},
-		]);
+		// ✅ FIXED: Pass newStart directly (no timezone adjustment needed)
+		const { meeting, registrantLinks } = await createZoomMeeting(
+			`(Profitize) Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`,
+			newStart, // ✅ Pass the JST Date object directly
+			30,
+			[
+				{
+					email: oldBooking.email,
+					firstName: oldBooking.first_name,
+					lastName: oldBooking.last_name,
+				},
+			],
+		);
 
 		const userZoomLink = registrantLinks[oldBooking.email];
 
@@ -143,6 +147,7 @@ Zoom link: ${userZoomLink || ""}
 					email: oldBooking.email,
 					phone: oldBooking.phone_number || "",
 					message: oldBooking.message || "",
+					userTimezone: timezone || "Asia/Tokyo", // ✅ Store user timezone
 				},
 			},
 		};
@@ -171,7 +176,7 @@ Zoom link: ${userZoomLink || ""}
 		// ============================================================
 		// SEND EMAIL NOTIFICATIONS
 		// ============================================================
-		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${newCancellationToken}`;
+		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}${locale === "ja" ? "" : `/${locale}`}/free-consultation/manage/${newCancellationToken}`;
 
 		// Send user reschedule email
 		await sendRescheduleUserEmail({

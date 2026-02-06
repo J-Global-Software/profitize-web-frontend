@@ -65,6 +65,8 @@
         "bookingStatus": "予約処理中...",
         "success": "予約が完了しました！",
         "errorFields": "必須項目をすべて入力してください",
-        "errorDateTime": "日付と時間を選択してください"
+        "errorDateTime": "日付と時間を選択してください",
+        "timezone_notice": "表示時間はあなたのローカルタイムゾーン（{timezone}）に基づいています",
+        "timezone_label": "タイムゾーン: {timezone}"
     }
 }

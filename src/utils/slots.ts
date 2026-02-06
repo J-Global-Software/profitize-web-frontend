@@ -1,3 +1,5 @@
+// src/utils/slots.ts
+
 export const weeklySlots: Record<number, string[]> = {
 	0: ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"],
 	1: ["07:00", "07:30", "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "21:50", "22:20"],
@@ -7,3 +9,50 @@ export const weeklySlots: Record<number, string[]> = {
 	5: ["07:00", "07:30", "08:00", "08:30", "11:45", "12:15", "12:45", "13:15", "13:45", "14:15", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:30", "22:00", "22:30"],
 	6: ["09:00", "10:20", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
 };
+
+/**
+ * Convert JST time slot to user's timezone
+ */
+export function convertJSTToUserTimezone(
+	jstDateStr: string,
+	jstTime: string,
+	userTimezone: string,
+): {
+	displayTime: string;
+	displayDate: string;
+} {
+	const [hours, minutes] = jstTime.split(":");
+
+	// Create ISO string with JST timezone (+09:00)
+	const jstISOString = `${jstDateStr}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00+09:00`;
+	const date = new Date(jstISOString);
+
+	// ✅ FIXED: Format directly without intermediate conversion
+	const displayTime = date.toLocaleTimeString("en-US", {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+		timeZone: userTimezone,
+	});
+
+	const displayDate = date.toLocaleDateString("en-CA", {
+		timeZone: userTimezone,
+	});
+
+	return { displayTime, displayDate };
+}
+
+/**
+ * Convert user's local time back to JST
+ */
+export function convertUserTimezoneToJST(
+	userDateStr: string,
+	userTime: string,
+	userTimezone: string,
+): {
+	jstDate: string;
+	jstTime: string;
+} {
+	// Not used yet, placeholder for booking functionality
+	return { jstDate: userDateStr, jstTime: userTime };
+}

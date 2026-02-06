@@ -65,6 +65,8 @@
         "bookingStatus": "Booking...",
         "success": "Booking confirmed!",
         "errorFields": "Please fill in all required fields",
-        "errorDateTime": "Please select a date and time"
+        "errorDateTime": "Please select a date and time",
+        "timezone_notice": "Times shown in your local timezone ({timezone})",
+        "timezone_label": "Timezone: {timezone}"
     }
 }

@@ -1,4 +1,3 @@
-import { google } from "googleapis";
 import type { NextRequest } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -11,6 +10,7 @@ import { loadServerMessages } from "@/messages/server";
 import { createZoomMeeting } from "@/src/utils/zoom";
 import { sendUserConfirmationEmail, sendLecturerNotificationEmail } from "@/src/utils/email/service";
 import { generateICS } from "@/src/utils/email/templates";
+import { getCalendarAuth } from "@/src/utils/google-calendar";
 
 const redis = Redis.fromEnv();
 const limiter = new Ratelimit({
@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
 
 	try {
 		const body = await req.json();
-		const { date, time, firstName, lastName, email, phone, message } = body;
+		// ✅ CHANGED: Now receiving timezone-aware data from client
+		const { date, time, firstName, lastName, email, phone, message, timezone } = body;
 
 		// ---------------------------------------------------------------
 		// Validation (runs on raw input — same as before)
@@ -70,15 +71,12 @@ export async function POST(req: NextRequest) {
 		// ---------------------------------------------------------------
 		// Google Calendar Auth
 		// ---------------------------------------------------------------
-		const auth = new google.auth.JWT({
-			email: process.env.GOOGLE_SERVICE_CLIENT_EMAIL,
-			key: process.env.GOOGLE_SERVICE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-			scopes: ["https://www.googleapis.com/auth/calendar"],
-		});
-		const calendar = google.calendar({ version: "v3", auth });
+		const calendar = getCalendarAuth();
 
 		// ---------------------------------------------------------------
 		// Event timing
+		// ✅ CHANGED: The date and time coming from client are already in JST
+		// (the client sends selectedSlot.jstDate and selectedSlot.jstTime)
 		// ---------------------------------------------------------------
 		const start = new Date(`${plain.date}T${plain.time}:00+09:00`);
 		const end = new Date(start.getTime() + 30 * 60 * 1000);
@@ -109,12 +107,7 @@ export async function POST(req: NextRequest) {
 		// Create Zoom meeting   ← plain.* (topic is plain text, not HTML)
 		// ---------------------------------------------------------------
 		const zoomTopic = `(Profitize) Free Consultation X ${plain.firstName} ${plain.lastName}`;
-		const { meeting, registrantLinks } = await createZoomMeeting(
-			zoomTopic,
-			start, // reuse the already-computed start (removed redundant startJST/startUTC)
-			30,
-			[{ email: plain.email, firstName: plain.firstName, lastName: plain.lastName }],
-		);
+		const { meeting, registrantLinks } = await createZoomMeeting(zoomTopic, start, 30, [{ email: plain.email, firstName: plain.firstName, lastName: plain.lastName }]);
 
 		const userZoomLink = registrantLinks[plain.email];
 
@@ -136,6 +129,8 @@ Zoom link: ${userZoomLink || ""}`,
 					email: plain.email,
 					phone: plain.phone,
 					message: plain.message,
+					// ✅ ADDED: Store user's timezone for reference
+					userTimezone: timezone || "Asia/Tokyo",
 				},
 			},
 		};
@@ -164,6 +159,7 @@ Zoom link: ${userZoomLink || ""}`,
 
 		// ---------------------------------------------------------------
 		// Generate email assets
+		// ✅ IMPROVED: ICS file now uses correct start/end times
 		// ---------------------------------------------------------------
 		const icsContent = generateICS({
 			start,
@@ -173,8 +169,7 @@ Zoom link: ${userZoomLink || ""}`,
 			location: "Online",
 		});
 
-		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/free-consultation/manage/${cancellationToken}`;
-
+		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}${locale === "ja" ? "" : `/${locale}`}/free-consultation/manage/${cancellationToken}`;
 		// ---------------------------------------------------------------
 		// Send user confirmation email
 		// ---------------------------------------------------------------
@@ -213,7 +208,6 @@ Zoom link: ${userZoomLink || ""}`,
 			});
 		}
 
-		console.error(err);
 		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
 			status: 500,
 		});

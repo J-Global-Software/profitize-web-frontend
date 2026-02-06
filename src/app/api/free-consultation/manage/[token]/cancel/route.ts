@@ -64,17 +64,21 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 			return new Response(JSON.stringify({ error: `Cannot cancel a booking with status: ${booking.status}` }), { status: 400 });
 		}
 
-		// 5️⃣ 24-hour + past check
+		// 5️⃣ 6-hour + past check
 		const eventDate = new Date(booking.event_date);
 		const now = new Date();
+
+		// Calculate difference in hours
 		const hoursUntilEvent = (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
+		// Guard: Prevent cancelling events that already happened
 		if (eventDate < now) {
 			return new Response(JSON.stringify({ error: "Cannot cancel a past event" }), { status: 400 });
 		}
 
-		if (hoursUntilEvent < 24) {
-			return new Response(JSON.stringify({ error: "Cannot cancel within 24 hours of the event" }), { status: 400 });
+		// Guard: New 4-hour policy
+		if (hoursUntilEvent < 4) {
+			return new Response(JSON.stringify({ error: "Cannot cancel within 4 hours of the event" }), { status: 400 });
 		}
 
 		// 6️⃣ Delete Google Calendar event (best effort)

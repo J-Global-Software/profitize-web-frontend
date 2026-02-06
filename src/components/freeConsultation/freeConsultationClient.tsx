@@ -8,19 +8,30 @@ import { useTranslations, useLocale } from "next-intl";
 
 type Step = 1 | 2;
 
+interface TimeSlot {
+	displayTime: string;
+	displayDate: string;
+	jstTime: string;
+	jstDate: string;
+}
+
 export default function FreeConsultationClient() {
 	const locale = useLocale();
 	const t = useTranslations("consultation");
 	const dateFnsLocale: Locale = locale === "ja" ? ja : enUS;
 
 	const [step, setStep] = useState<Step>(1);
-	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const [currentMonth, setCurrentMonth] = useState(() => {
+		const d = new Date();
+		return new Date(d.getFullYear(), d.getMonth(), 1);
+	});
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-	const [selectedTime, setSelectedTime] = useState<string | null>(null);
-	const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+	const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+	const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
 	const [showAllSlots, setShowAllSlots] = useState(false);
 	const [loadingSlots, setLoadingSlots] = useState(false);
 	const [loadingBooking, setLoadingBooking] = useState(false);
+	const [userTimezone, setUserTimezone] = useState<string>("");
 
 	// Controlled form values
 	const [firstName, setFirstName] = useState("");
@@ -28,7 +39,15 @@ export default function FreeConsultationClient() {
 	const [email, setEmail] = useState("");
 	const [message, setMessage] = useState("");
 
-	// Safer "Today" check - sets to midnight local time
+	const [isClient, setIsClient] = useState(false);
+
+	// Detect user's timezone
+	useEffect(() => {
+		setIsClient(true); // Mark that we're on client now
+		const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		setUserTimezone(tz);
+	}, []);
+
 	const today = useMemo(() => {
 		const d = new Date();
 		d.setHours(0, 0, 0, 0);
@@ -45,32 +64,31 @@ export default function FreeConsultationClient() {
 
 	function getMonthLabel(currentMonth: Date) {
 		if (locale === "ja") {
-			// Year first, numeric month
 			return format(currentMonth, "yyyy年 MM月", { locale: dateFnsLocale });
-			// or with Japanese characters:
-			// return format(currentMonth, "yyyy年 MM月", { locale: locales[locale] });
 		} else {
-			// English: full month name + year
 			return format(currentMonth, "MMMM yyyy", { locale: dateFnsLocale });
 		}
 	}
+
 	const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
 
 	/* ---------------- Available slots logic ---------------- */
 	useEffect(() => {
-		if (!selectedDate) return;
+		if (!selectedDate || !userTimezone) return;
 
 		const fetchSlots = async () => {
 			setLoadingSlots(true);
 			setAvailableSlots([]);
-			setSelectedTime(null);
+			setSelectedSlot(null);
 
 			try {
 				const res = await fetch("/api/free-consultation/available-slots/", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					// SAFE: format uses the date as shown on the calendar
-					body: JSON.stringify({ date: format(selectedDate, "yyyy-MM-dd") }),
+					body: JSON.stringify({
+						date: format(selectedDate, "yyyy-MM-dd"),
+						timezone: userTimezone,
+					}),
 				});
 				const data = await res.json();
 				setAvailableSlots(data.availableSlots || []);
@@ -83,16 +101,26 @@ export default function FreeConsultationClient() {
 		};
 
 		fetchSlots();
-	}, [selectedDate]);
+	}, [selectedDate, userTimezone]);
 
 	/* ---------------- Slot preview logic ---------------- */
 	const previewCount = 6;
-	const previewSlots = selectedTime ? [...availableSlots.slice(0, previewCount).filter((slot) => slot !== selectedTime), selectedTime] : availableSlots.slice(0, previewCount);
+	const previewSlots = useMemo(() => {
+		if (!selectedSlot) return availableSlots.slice(0, previewCount);
+
+		const firstSlots = availableSlots.slice(0, previewCount);
+		// If selected slot is in first 6, just return them
+		if (firstSlots.some((slot) => slot.displayTime === selectedSlot.displayTime)) {
+			return firstSlots;
+		}
+		// Otherwise, replace the last slot with the selected one
+		return [...firstSlots.slice(0, previewCount - 1), selectedSlot];
+	}, [availableSlots, selectedSlot]);
 	const extraSlots = availableSlots.filter((slot) => !previewSlots.includes(slot));
 
 	/* ---------------- Booking logic ---------------- */
 	const handleConfirmBooking = async () => {
-		if (!selectedDate || !selectedTime) {
+		if (!selectedDate || !selectedSlot) {
 			toast.error(t("booking.errorDateTime"));
 			return;
 		}
@@ -112,9 +140,10 @@ export default function FreeConsultationClient() {
 					"x-locale": locale,
 				},
 				body: JSON.stringify({
-					// FIXED: Using format instead of toISOString() to avoid UTC shifts
-					date: format(selectedDate, "yyyy-MM-dd"),
-					time: selectedTime,
+					// Send JST date/time to backend
+					date: selectedSlot.jstDate,
+					time: selectedSlot.jstTime,
+					timezone: userTimezone,
 					firstName,
 					lastName,
 					email,
@@ -133,7 +162,7 @@ export default function FreeConsultationClient() {
 			// Reset form
 			setStep(1);
 			setSelectedDate(null);
-			setSelectedTime(null);
+			setSelectedSlot(null);
 			setFirstName("");
 			setLastName("");
 			setEmail("");
@@ -159,7 +188,7 @@ export default function FreeConsultationClient() {
 							active={step === 2}
 							label={t("booking.step2")}
 							onClick={() => {
-								if (selectedTime) setStep(2);
+								if (selectedSlot) setStep(2);
 							}}
 						/>
 					</div>
@@ -195,16 +224,25 @@ export default function FreeConsultationClient() {
 								{Array.from({ length: daysInMonth.totalDays }).map((_, i) => {
 									const day = i + 1;
 									const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-									const isPast = date < today;
+									// japan is ahead of UTC and the date changes depending on timezone
+									let isPast = false;
+									if (isClient) {
+										const localToday = new Date();
+										localToday.setHours(0, 0, 0, 0);
+										const localDate = new Date(date);
+										localDate.setHours(0, 0, 0, 0);
+										isPast = localDate.getTime() < localToday.getTime();
+									}
 									const isSelected = selectedDate?.toDateString() === date.toDateString();
 
 									return (
 										<button
-											key={day}
+											key={day + i}
 											disabled={isPast}
 											onClick={() => setSelectedDate(date)}
 											className={`py-3 text-sm font-medium rounded-xl transition
-                                                ${isSelected ? "bg-[#1754cf] text-white shadow-lg shadow-[#1754cf]/20" : isPast ? "text-gray-300 bg-transparent cursor-not-allowed" : "hover:bg-[#f0f4ff]"}`}
+    ${isSelected ? "bg-[#1754cf] text-white shadow-lg shadow-[#1754cf]/20" : isPast ? "text-gray-300 bg-transparent cursor-not-allowed" : "hover:bg-[#f0f4ff]"}
+  `}
 										>
 											{day}
 										</button>
@@ -217,6 +255,7 @@ export default function FreeConsultationClient() {
 							<div className="p-5 md:p-10 pb-4">
 								<p className="text-[10px] font-black uppercase tracking-widest text-[#1754cf]">{selectedDate ? format(selectedDate, "PPPP", { locale: dateFnsLocale }) : t("manage.selectDateShort")}</p>
 								<h3 className="text-xl font-bold">{t("manage.availableSlots")}</h3>
+								{userTimezone && userTimezone !== "Asia/Tokyo" && <p className="text-xs text-gray-500 mt-1">{t("booking.timezone_notice", { timezone: userTimezone })}</p>}{" "}
 							</div>
 
 							<div className="px-5 md:px-10 grid grid-cols-2 gap-3 min-h-[200px]">
@@ -228,14 +267,16 @@ export default function FreeConsultationClient() {
 									<div className="col-span-2 text-gray-400 font-bold text-center">{t("booking.noSlots")}</div>
 								) : (
 									<>
-										{previewSlots.map((time) => (
+										{previewSlots.map((slot) => (
 											<button
-												key={time}
-												onClick={() => setSelectedTime(time)}
+												key={slot.displayTime}
+												onClick={() => setSelectedSlot(slot)}
 												className={`px-4 py-3 rounded-xl text-left transition border
-                                                    ${selectedTime === time ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent hover:border-[#1754cf]/30"}`}
+            ${selectedSlot?.displayTime === slot.displayTime ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent hover:border-[#1754cf]/30"}`}
 											>
-												{time}
+												<div className="text-sm">{slot.displayTime}</div>
+												{/* Add JST Time display here */}
+												{userTimezone && userTimezone !== "Asia/Tokyo" && <div className="text-[10px] text-gray-400 font-medium mt-1">JST: {slot.jstTime}</div>}
 											</button>
 										))}
 										{extraSlots.length > 0 && !showAllSlots && (
@@ -249,34 +290,55 @@ export default function FreeConsultationClient() {
 
 							{/* Modal for all slots */}
 							{showAllSlots && (
-								<div className="fixed inset-0 z-20 flex items-center justify-center bg-black/50" onClick={() => setShowAllSlots(false)}>
-									<div className="bg-white rounded-2xl p-6 max-w-[700px] w-full max-h-[80vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
-										<div className="flex items-center justify-between mb-4">
-											<h3 className="text-xl font-bold">{t("manage.allSlots")}</h3>
-											<button onClick={() => setShowAllSlots(false)} className="text-gray-500 hover:text-gray-900 text-2xl font-bold">
-												×
+								<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setShowAllSlots(false)}>
+									{/* Animated Overlay */}
+									<div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
+
+									<div className="bg-white rounded-[2rem] w-full max-w-[640px] max-h-[85vh] overflow-hidden shadow-2xl relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+										{/* Modal Header */}
+										<div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-white sticky top-0 z-10">
+											<div>
+												<h3 className="text-xl font-black text-gray-900">{t("manage.allSlots")}</h3>
+												<p className="text-xs text-gray-400 font-medium mt-1">{selectedDate ? format(selectedDate, "PPPP", { locale: dateFnsLocale }) : ""}</p>
+											</div>
+											<button onClick={() => setShowAllSlots(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all">
+												<span className="material-symbols-outlined">close</span>
 											</button>
 										</div>
-										<div className="grid grid-cols-3 gap-3">
-											{availableSlots.map((time) => (
-												<button
-													key={time}
-													onClick={() => {
-														setSelectedTime(time);
-														setShowAllSlots(false);
-													}}
-													className={`px-4 py-3 rounded-xl text-center transition border ${selectedTime === time ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf] font-bold" : "bg-white border-transparent hover:border-[#1754cf]/30"}`}
-												>
-													{time}
-												</button>
-											))}
+
+										{/* Scrollable Content */}
+										<div className="p-8 overflow-y-auto custom-scrollbar">
+											<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+												{availableSlots.map((slot) => {
+													const isSelected = selectedSlot?.displayTime === slot.displayTime;
+													return (
+														<button
+															key={slot.displayTime}
+															onClick={() => {
+																setSelectedSlot(slot);
+																setShowAllSlots(false);
+															}}
+															className={`group flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-200 border-2 ${isSelected ? "border-[#1754cf] bg-[#f0f4ff] text-[#1754cf]" : "border-gray-50 bg-gray-50/50 hover:border-gray-200 hover:bg-white text-gray-600"}`}
+														>
+															<span className="text-sm font-bold tracking-tight">{slot.displayTime}</span>
+
+															{userTimezone && userTimezone !== "Asia/Tokyo" && <span className={`text-[10px] mt-1 font-medium px-2 py-0.5 rounded-full transition-colors ${isSelected ? "bg-[#1754cf]/10 text-[#1754cf]" : "text-gray-400 bg-gray-200/50"}`}>JST {slot.jstTime}</span>}
+														</button>
+													);
+												})}
+											</div>
+										</div>
+
+										{/* Modal Footer (Optional visual anchor) */}
+										<div className="px-8 py-4 bg-gray-50/50 border-t border-gray-50 text-center">
+											<p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{userTimezone ? `Timezone: ${userTimezone.replace("_", " ")}` : ""}</p>
 										</div>
 									</div>
 								</div>
 							)}
 
 							<div className="mt-auto p-5 md:p-10 pt-6 border-t border-gray-100 bg-white/60">
-								<button disabled={!selectedDate || !selectedTime} onClick={() => setStep(2)} className="w-full bg-[#1754cf] text-white font-bold py-4 rounded-xl shadow-lg disabled:opacity-30">
+								<button disabled={!selectedDate || !selectedSlot} onClick={() => setStep(2)} className="w-full bg-[#1754cf] text-white font-bold py-4 rounded-xl shadow-lg disabled:opacity-30">
 									{t("booking.continue")}
 								</button>
 							</div>
@@ -292,12 +354,14 @@ export default function FreeConsultationClient() {
 							<div className="flex flex-col gap-4 mt-4">
 								<div className="flex justify-between text-sm font-bold">
 									<span className="text-gray-400">{t("booking.date")}:</span>
-									{/* Added locale here for consistent date formatting */}
-									<span>{selectedDate ? format(selectedDate, "PP", { locale: dateFnsLocale }) : "-"}</span>
+									<span>{selectedSlot?.displayDate || (selectedDate ? format(selectedDate, "PP", { locale: dateFnsLocale }) : "-")}</span>
 								</div>
 								<div className="flex justify-between text-sm font-bold">
 									<span className="text-gray-400">{t("booking.time")}:</span>
-									<span>{selectedTime || "-"}</span>
+									<div className="text-right">
+										<div>{selectedSlot?.displayTime || "-"}</div>
+										{userTimezone && userTimezone !== "Asia/Tokyo" && selectedSlot && <div className="text-xs text-gray-400 font-normal mt-1">JST: {selectedSlot.jstTime}</div>}
+									</div>
 								</div>
 								<div className="flex justify-between text-sm font-bold">
 									<span className="text-gray-400">{t("booking.location")}:</span>

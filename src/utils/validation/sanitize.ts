@@ -26,7 +26,18 @@ export function sanitizeHtml(input: string): string {
  * Returns both plain-text and HTML-safe versions so each context
  * picks the right one without the caller having to think about it.
  */
-export function sanitizeBookingInputs(raw: { firstName: string; lastName: string; date: string; time: string; email: string; phone: string; message: string }) {
+
+interface SanitizeParams {
+	firstName: string;
+	lastName: string;
+	email: string;
+	phone: string;
+	message: string;
+	date: string;
+	time: string;
+	timezone?: string; // Add this
+}
+export function sanitizeBookingInputs(raw: SanitizeParams) {
 	return {
 		plain: {
 			firstName: sanitizePlainText(raw.firstName),

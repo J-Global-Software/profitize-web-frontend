@@ -5,12 +5,14 @@ import { createZoomMeeting, deleteZoomMeeting } from "@/src/utils/zoom";
 import { loadServerMessages } from "@/messages/server";
 import { EmailService } from "./email.service";
 import { generateICS } from "./generateEmail";
-import { convertJSTToUserTimezone, weeklySlots } from "../utils/slots";
+import { convertJSTToUserTimezone, hashCode, weeklySlots } from "../utils/slots";
+import { query } from "../utils/neon";
 
 export const BookingService = {
 	/**
 	 * INITIAL BOOKING
 	 */
+
 	async createBooking(payload: any, sessionId: string, locale: string = "ja") {
 		try {
 			// 1. Timing Logic (JST)
@@ -21,79 +23,83 @@ export const BookingService = {
 			const policy = BookingPolicy.canModify(start);
 			if (!policy.allowed) throw new Error("NEW_TIME_TOO_SOON");
 
-			// 3. Conflict Check (Google API)
-			const tConflict = performance.now();
-			const calendar = getCalendarAuth();
-			const hasConflict = await checkCalendarConflict(start, end);
+			// 🔒 ACQUIRE LOCK for this specific time slot
+			const lockKey = Math.abs(hashCode(`${payload.date}-${payload.time}`));
+			await query(`SELECT pg_advisory_lock($1)`, [lockKey]);
 
-			if (hasConflict) throw new Error("TIME_SLOT_OCCUPIED");
+			try {
+				// 3. Conflict Check (Google API)
+				const calendar = getCalendarAuth();
+				const hasConflict = await checkCalendarConflict(start, end);
 
-			// 4 & 5. Create Zoom & Google Event IN PARALLEL
-			// This saves massive time because we don't wait for Zoom to finish before starting Google
+				if (hasConflict) throw new Error("TIME_SLOT_OCCUPIED");
 
-			const zoomTopic = `(Profitize) Free Consultation X ${payload.firstName} ${payload.lastName}`;
+				// 4 & 5. Create Zoom & Google Event IN PARALLEL
+				const zoomTopic = `(Profitize) Free Consultation X ${payload.firstName} ${payload.lastName}`;
 
-			const [zoomData, gCalEvent] = await Promise.all([
-				createZoomMeeting(zoomTopic, start, 30, [{ email: payload.email, firstName: payload.firstName, lastName: payload.lastName }]),
-				createBookingEvent({
-					summary: zoomTopic,
-					description: `Free consultation session with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}`,
-					start,
-					end,
-				}),
-			]);
-
-			const { meeting, registrantLinks } = zoomData;
-			const userZoomLink = registrantLinks[payload.email];
-
-			// 6. Save to DB
-			const tDB = performance.now();
-			const booking = await BookingRepository.createInitial({
-				...payload,
-				sessionId,
-				zoomId: String(meeting.id),
-				zoomUrl: userZoomLink,
-				calendarId: gCalEvent.id,
-				eventDate: start.toISOString(),
-			});
-
-			// 7. Send Emails (Non-blocking)
-			// We do NOT await this so the user gets a success response immediately
-			(async () => {
-				try {
-					const messages = await loadServerMessages(locale);
-					const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
-
-					const icsContent = generateICS({
+				const [zoomData, gCalEvent] = await Promise.all([
+					createZoomMeeting(zoomTopic, start, 30, [{ email: payload.email, firstName: payload.firstName, lastName: payload.lastName }]),
+					createBookingEvent({
+						summary: zoomTopic,
+						description: `Free consultation session with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}`,
 						start,
 						end,
-						title: zoomTopic,
-						description: "Your free consultation session",
-						location: "Zoom Meeting",
-					});
+					}),
+				]);
 
-					await Promise.all([
-						EmailService.sendUserConfirmation({
-							locale,
-							userData: payload,
-							userZoomLink,
-							managementUrl,
-							messages,
-							icsContent,
-							fromEmail: process.env.FROM_EMAIL || "",
-							toEmail: payload.email,
-						}),
-						EmailService.sendLecturerNotification({
-							userData: payload,
-							messages,
-							fromEmail: process.env.FROM_EMAIL || "",
-							toEmail: process.env.LECTURER_EMAIL || "",
-						}),
-					]);
-				} catch (emailError) {}
-			})();
+				const { meeting, registrantLinks } = zoomData;
+				const userZoomLink = registrantLinks[payload.email];
 
-			return { booking, sessionId };
+				// 6. Save to DB
+				const booking = await BookingRepository.createInitial({
+					...payload,
+					sessionId,
+					zoomId: String(meeting.id),
+					zoomUrl: userZoomLink,
+					calendarId: gCalEvent.id,
+					eventDate: start.toISOString(),
+				});
+
+				// 7. Send Emails (Non-blocking)
+				(async () => {
+					try {
+						const messages = await loadServerMessages(locale);
+						const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
+
+						const icsContent = generateICS({
+							start,
+							end,
+							title: zoomTopic,
+							description: "Your free consultation session",
+							location: "Zoom Meeting",
+						});
+
+						await Promise.all([
+							EmailService.sendUserConfirmation({
+								locale,
+								userData: payload,
+								userZoomLink,
+								managementUrl,
+								messages,
+								icsContent,
+								fromEmail: process.env.FROM_EMAIL || "",
+								toEmail: payload.email,
+							}),
+							EmailService.sendLecturerNotification({
+								userData: payload,
+								messages,
+								fromEmail: process.env.FROM_EMAIL || "",
+								toEmail: process.env.LECTURER_EMAIL || "",
+							}),
+						]);
+					} catch (emailError) {}
+				})();
+
+				return { booking, sessionId };
+			} finally {
+				// ALWAYS release the lock
+				await query(`SELECT pg_advisory_unlock($1)`, [lockKey]);
+			}
 		} catch (error) {
 			throw error;
 		}
@@ -117,77 +123,85 @@ export const BookingService = {
 		const newPolicy = BookingPolicy.canModify(newStart);
 		if (!newPolicy.allowed) throw new Error("NEW_TIME_TOO_SOON");
 
-		// 4. Check for Google Calendar Conflicts
-		const calendar = getCalendarAuth();
-		const existing = await calendar.events.list({
-			calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
-			timeMin: newStart.toISOString(),
-			timeMax: newEnd.toISOString(),
-			singleEvents: true,
-		});
+		// 🔒 ACQUIRE LOCK for new slot
+		const lockKey = Math.abs(hashCode(`${date}-${time}`));
+		await query(`SELECT pg_advisory_lock($1)`, [lockKey]);
 
-		if (existing.data.items && existing.data.items.length > 0) {
-			throw new Error("TIME_SLOT_OCCUPIED");
+		try {
+			// 4. Check for Google Calendar Conflicts
+			const calendar = getCalendarAuth();
+			const existing = await calendar.events.list({
+				calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
+				timeMin: newStart.toISOString(),
+				timeMax: newEnd.toISOString(),
+				singleEvents: true,
+			});
+
+			if (existing.data.items && existing.data.items.length > 0) {
+				throw new Error("TIME_SLOT_OCCUPIED");
+			}
+
+			// 5. Cleanup Old External Events (Best effort)
+			if (oldBooking.google_calendar_event_id) {
+				await deleteCalendarEvent(oldBooking.google_calendar_event_id).catch(console.error);
+			}
+			if (oldBooking.zoom_meeting_id) {
+				await deleteZoomMeeting(oldBooking.zoom_meeting_id).catch(console.error);
+			}
+
+			// 6. Create New Zoom Meeting
+			const zoomTopic = `(Profitize) Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`;
+			const { meeting, registrantLinks } = await createZoomMeeting(zoomTopic, newStart, 30, [{ email: oldBooking.email, firstName: oldBooking.first_name, lastName: oldBooking.last_name }]);
+			const userZoomLink = registrantLinks[oldBooking.email];
+
+			// 7. Create New Google Calendar Event
+			const calendarResponse = await calendar.events.insert({
+				calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
+				requestBody: {
+					summary: zoomTopic,
+					description: `Rescheduled from ${new Date(oldBooking.event_date).toLocaleString()}\nZoom: ${userZoomLink}`,
+					start: { dateTime: newStart.toISOString(), timeZone: "Asia/Tokyo" },
+					end: { dateTime: newEnd.toISOString(), timeZone: "Asia/Tokyo" },
+				},
+			});
+
+			// 8. Update DB (Atomic-like operation)
+			const newBooking = await BookingRepository.createRescheduled(oldBooking, {
+				eventDate: newStart.toISOString(),
+				calendarId: calendarResponse.data.id,
+				zoomId: String(meeting.id),
+				zoomUrl: userZoomLink,
+			});
+
+			await BookingRepository.updateStatus(oldBooking.id, "rescheduled");
+
+			// 9. Send Notifications (Async)
+			const messages = await loadServerMessages(locale);
+			const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/free-consultation/manage/${newBooking.cancellation_token}`;
+
+			await Promise.all([
+				EmailService.sendRescheduleUser({
+					locale,
+					firstName: oldBooking.first_name,
+					lastName: oldBooking.last_name,
+					email: oldBooking.email,
+					oldEventDate: new Date(oldBooking.event_date),
+					newStart,
+					newEnd,
+					userZoomLink,
+					managementUrl,
+					messages,
+					fromEmail: process.env.FROM_EMAIL || "",
+					toEmail: oldBooking.email,
+				}),
+				EmailService.sendRescheduleLecturer(oldBooking.first_name, oldBooking.last_name, new Date(oldBooking.event_date), newStart, process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || ""),
+			]);
+
+			return newBooking;
+		} finally {
+			// ALWAYS release the lock
+			await query(`SELECT pg_advisory_unlock($1)`, [lockKey]);
 		}
-
-		// 5. Cleanup Old External Events (Best effort)
-		if (oldBooking.google_calendar_event_id) {
-			await deleteCalendarEvent(oldBooking.google_calendar_event_id).catch(console.error);
-		}
-		if (oldBooking.zoom_meeting_id) {
-			await deleteZoomMeeting(oldBooking.zoom_meeting_id).catch(console.error);
-		}
-
-		// 6. Create New Zoom Meeting
-		const zoomTopic = `(Profitize) Free Consultation X ${oldBooking.first_name} ${oldBooking.last_name}`;
-		const { meeting, registrantLinks } = await createZoomMeeting(zoomTopic, newStart, 30, [{ email: oldBooking.email, firstName: oldBooking.first_name, lastName: oldBooking.last_name }]);
-		const userZoomLink = registrantLinks[oldBooking.email];
-
-		// 7. Create New Google Calendar Event
-		const calendarResponse = await calendar.events.insert({
-			calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
-			requestBody: {
-				summary: zoomTopic,
-				description: `Rescheduled from ${new Date(oldBooking.event_date).toLocaleString()}\nZoom: ${userZoomLink}`,
-				start: { dateTime: newStart.toISOString(), timeZone: "Asia/Tokyo" },
-				end: { dateTime: newEnd.toISOString(), timeZone: "Asia/Tokyo" },
-			},
-		});
-
-		// 8. Update DB (Atomic-like operation)
-		const newBooking = await BookingRepository.createRescheduled(oldBooking, {
-			eventDate: newStart.toISOString(),
-			calendarId: calendarResponse.data.id,
-			zoomId: String(meeting.id),
-			zoomUrl: userZoomLink,
-		});
-
-		await BookingRepository.updateStatus(oldBooking.id, "rescheduled");
-
-		// 9. Send Notifications (Async)
-		const messages = await loadServerMessages(locale);
-		const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/free-consultation/manage/${newBooking.cancellation_token}`;
-
-		// We don't 'await' these if we want the response to be fast, or await them to ensure delivery
-		await Promise.all([
-			EmailService.sendRescheduleUser({
-				locale,
-				firstName: oldBooking.first_name,
-				lastName: oldBooking.last_name,
-				email: oldBooking.email,
-				oldEventDate: new Date(oldBooking.event_date),
-				newStart,
-				newEnd,
-				userZoomLink,
-				managementUrl,
-				messages,
-				fromEmail: process.env.FROM_EMAIL || "",
-				toEmail: oldBooking.email,
-			}),
-			EmailService.sendRescheduleLecturer(oldBooking.first_name, oldBooking.last_name, new Date(oldBooking.event_date), newStart, process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || ""),
-		]);
-
-		return newBooking;
 	},
 
 	async cancelBooking(token: string, locale: string = "ja") {

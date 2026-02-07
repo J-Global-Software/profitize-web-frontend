@@ -56,3 +56,11 @@ export function convertUserTimezoneToJST(
 	// Not used yet, placeholder for booking functionality
 	return { jstDate: userDateStr, jstTime: userTime };
 }
+
+export function hashCode(str: string): number {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		hash = (hash << 5) - hash + str.charCodeAt(i);
+	}
+	return hash;
+}

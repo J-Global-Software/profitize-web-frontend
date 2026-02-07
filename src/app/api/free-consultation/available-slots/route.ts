@@ -7,17 +7,24 @@ import { getErrorStatus } from "@/src/utils/errors";
 const redis = Redis.fromEnv();
 const limiter = new Ratelimit({
 	redis,
-	limiter: Ratelimit.slidingWindow(20, "1m"), // Generous limit for calendar browsing
+	limiter: Ratelimit.slidingWindow(20, "1m"),
 });
 
 export async function POST(req: NextRequest) {
 	const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+	// 1. Rate Limiting
 	const { success } = await limiter.limit(ip);
-	if (!success) return Response.json({ error: "Too many requests" }, { status: 429 });
+	if (!success) {
+		return Response.json({ error: "Too many requests" }, { status: 429 });
+	}
 
 	try {
+		// 2. Request Validation
 		const rawBody = await req.text();
-		if (!rawBody) return Response.json({ error: "Empty body" }, { status: 400 });
+		if (!rawBody) {
+			return Response.json({ error: "Empty request body" }, { status: 400 });
+		}
 
 		const { date, timezone } = JSON.parse(rawBody);
 
@@ -25,7 +32,8 @@ export async function POST(req: NextRequest) {
 			return Response.json({ error: "Date is required" }, { status: 400 });
 		}
 
-		// Delegate heavy lifting to Service
+		// 3. Execution
+		// Note: Providing the default here ensures the Service always has a string to work with
 		const availableSlots = await BookingService.getAvailableSlots(date, timezone || "Asia/Tokyo");
 
 		return Response.json(
@@ -36,8 +44,11 @@ export async function POST(req: NextRequest) {
 			{ status: 200 },
 		);
 	} catch (err: any) {
-		console.error("[Slots API Error]", err.message);
+		console.error("[Slots API Error]:", err.message);
 
-		return Response.json({ error: err.message || "Internal Server Error" }, { status: getErrorStatus(err.message) });
+		// Returns 400, 401, 404, etc. based on error message, or defaults to 500
+		const status = getErrorStatus(err.message);
+
+		return Response.json({ error: err.message || "Internal Server Error" }, { status });
 	}
 }

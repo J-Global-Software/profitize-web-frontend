@@ -15,15 +15,10 @@ const limiter = new Ratelimit({
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]{1,50}$/;
 
 export async function POST(req: NextRequest) {
-	console.log("--- API Route Timer Start ---");
-	console.time("⏱️ FULL_ROUTE_EXECUTION");
-
 	try {
-		console.time("⏱️ BODY_PARSE");
 		const rawBody = await req.text();
 		if (!rawBody) return Response.json({ error: "Empty body" }, { status: 400 });
 		const body = JSON.parse(rawBody);
-		console.timeEnd("⏱️ BODY_PARSE");
 
 		// Honeypot
 		if (body.company) return Response.json({ success: true });
@@ -42,16 +37,12 @@ export async function POST(req: NextRequest) {
 		}
 
 		// 2. Session Initialization
-		console.time("⏱️ SESSION_INIT");
 		// Calling the static method from your SessionService class
 		const { sessionId } = await SessionService.getOrCreate(req);
-		console.timeEnd("⏱️ SESSION_INIT");
 
 		// 3. Rate Limit Check
-		console.time("⏱️ RATE_LIMIT_CHECK");
 		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 		const { success } = await limiter.limit(`${sessionId}:${ip}`);
-		console.timeEnd("⏱️ RATE_LIMIT_CHECK");
 
 		if (!success) {
 			return Response.json({ error: "Too many messages. Please try later." }, { status: 429 });
@@ -71,16 +62,9 @@ export async function POST(req: NextRequest) {
 		const res = NextResponse.json({ success: true });
 		res.headers.set("Set-Cookie", `sessionId=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
 
-		console.timeEnd("⏱️ FULL_ROUTE_EXECUTION");
-		console.log("--- API Route Timer End ---");
-
 		return res;
 	} catch (err: any) {
 		console.error("CONTACT API ERROR:", err.message);
-		// Ensure the timer stops even on failure
-		try {
-			console.timeEnd("⏱️ FULL_ROUTE_EXECUTION");
-		} catch (e) {}
 
 		return Response.json({ error: err.message || "Internal Server Error" }, { status: getErrorStatus(err.message) });
 	}

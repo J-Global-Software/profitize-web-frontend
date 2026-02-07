@@ -12,80 +12,91 @@ export const BookingService = {
 	 * INITIAL BOOKING
 	 */
 	async createBooking(payload: any, sessionId: string, locale: string = "ja") {
-		// 1. Timing Logic (JST)
-		const start = new Date(`${payload.date}T${payload.time}:00+09:00`);
-		const end = new Date(start.getTime() + 30 * 60 * 1000);
-
-		// 2. Policy Check
-		const policy = BookingPolicy.canModify(start);
-		if (!policy.allowed) throw new Error("NEW_TIME_TOO_SOON");
-
-		// 3. Conflict Check
-		const calendar = getCalendarAuth();
-		const hasConflict = await checkCalendarConflict(start, end); // Clean!		if (hasConflict) throw new Error("TIME_SLOT_OCCUPIED");
-
-		// 4. Create Zoom Meeting
-		const zoomTopic = `(Profitize) Free Consultation X ${payload.firstName} ${payload.lastName}`;
-		const { meeting, registrantLinks } = await createZoomMeeting(zoomTopic, start, 30, [{ email: payload.email, firstName: payload.firstName, lastName: payload.lastName }]);
-		const userZoomLink = registrantLinks[payload.email];
-
-		// 5. Create Google Calendar Event (FIXED: Added requestBody mapping)
-		const gCalEvent = await createBookingEvent({
-			summary: zoomTopic,
-			description: `Free consultation session with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}\nZoom Link: ${userZoomLink}`,
-			start,
-			end,
-		});
-
-		// 6. Save to DB
-		const booking = await BookingRepository.createInitial({
-			...payload,
-			sessionId,
-			zoomId: String(meeting.id),
-			zoomUrl: userZoomLink,
-			calendarId: gCalEvent.id,
-			eventDate: start.toISOString(),
-		});
-
-		// 7. Send Emails
 		try {
-			const messages = await loadServerMessages(locale);
-			const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
+			// 1. Timing Logic (JST)
+			const start = new Date(`${payload.date}T${payload.time}:00+09:00`);
+			const end = new Date(start.getTime() + 30 * 60 * 1000);
 
-			// Generate the ICS for the user
-			const icsContent = generateICS({
-				start,
-				end,
-				title: zoomTopic,
-				description: "Your free consultation session",
-				location: "Zoom Meeting",
-			});
+			// 2. Policy Check
+			const policy = BookingPolicy.canModify(start);
+			if (!policy.allowed) throw new Error("NEW_TIME_TOO_SOON");
 
-			// Use await to ensure the function doesn't finish before emails are sent
-			await Promise.all([
-				EmailService.sendUserConfirmation({
-					locale,
-					userData: payload,
-					userZoomLink,
-					managementUrl,
-					messages,
-					icsContent,
-					fromEmail: process.env.FROM_EMAIL || "",
-					toEmail: payload.email,
-				}),
-				EmailService.sendLecturerNotification({
-					userData: payload,
-					messages,
-					fromEmail: process.env.FROM_EMAIL || "",
-					toEmail: process.env.LECTURER_EMAIL || "",
+			// 3. Conflict Check (Google API)
+			const tConflict = performance.now();
+			const calendar = getCalendarAuth();
+			const hasConflict = await checkCalendarConflict(start, end);
+
+			if (hasConflict) throw new Error("TIME_SLOT_OCCUPIED");
+
+			// 4 & 5. Create Zoom & Google Event IN PARALLEL
+			// This saves massive time because we don't wait for Zoom to finish before starting Google
+
+			const zoomTopic = `(Profitize) Free Consultation X ${payload.firstName} ${payload.lastName}`;
+
+			const [zoomData, gCalEvent] = await Promise.all([
+				createZoomMeeting(zoomTopic, start, 30, [{ email: payload.email, firstName: payload.firstName, lastName: payload.lastName }]),
+				createBookingEvent({
+					summary: zoomTopic,
+					description: `Free consultation session with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}`,
+					start,
+					end,
 				}),
 			]);
-		} catch (emailError) {
-			// We log the error but don't crash the whole booking
-			// since the Zoom/Calendar/DB parts succeeded
-			console.error("Email Dispatch Error:", emailError);
+
+			const { meeting, registrantLinks } = zoomData;
+			const userZoomLink = registrantLinks[payload.email];
+
+			// 6. Save to DB
+			const tDB = performance.now();
+			const booking = await BookingRepository.createInitial({
+				...payload,
+				sessionId,
+				zoomId: String(meeting.id),
+				zoomUrl: userZoomLink,
+				calendarId: gCalEvent.id,
+				eventDate: start.toISOString(),
+			});
+
+			// 7. Send Emails (Non-blocking)
+			// We do NOT await this so the user gets a success response immediately
+			(async () => {
+				try {
+					const messages = await loadServerMessages(locale);
+					const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
+
+					const icsContent = generateICS({
+						start,
+						end,
+						title: zoomTopic,
+						description: "Your free consultation session",
+						location: "Zoom Meeting",
+					});
+
+					await Promise.all([
+						EmailService.sendUserConfirmation({
+							locale,
+							userData: payload,
+							userZoomLink,
+							managementUrl,
+							messages,
+							icsContent,
+							fromEmail: process.env.FROM_EMAIL || "",
+							toEmail: payload.email,
+						}),
+						EmailService.sendLecturerNotification({
+							userData: payload,
+							messages,
+							fromEmail: process.env.FROM_EMAIL || "",
+							toEmail: process.env.LECTURER_EMAIL || "",
+						}),
+					]);
+				} catch (emailError) {}
+			})();
+
+			return { booking, sessionId };
+		} catch (error) {
+			throw error;
 		}
-		return { booking, sessionId };
 	},
 
 	async rescheduleBooking(token: string, date: string, time: string, locale: string = "ja") {
@@ -180,40 +191,43 @@ export const BookingService = {
 	},
 
 	async cancelBooking(token: string, locale: string = "ja") {
-		// 1. Fetch the base booking
+		// 1. Fetch & Validate (Source of Truth)
 		const baseBooking = await BookingRepository.findByToken(token);
 		if (!baseBooking) throw new Error("BOOKING_NOT_FOUND");
 
-		// 2. If rescheduled, find the latest confirmed version
 		const latestBooking = (await BookingRepository.findLatestChild(baseBooking.id)) || baseBooking;
 
 		if (latestBooking.status !== "confirmed") {
 			throw new Error(`CANNOT_CANCEL_STATUS_${latestBooking.status}`);
 		}
 
-		// 3. Validate Policy (The 4-hour rule)
+		// 2. Validate Policy (Fast local logic)
 		const policy = BookingPolicy.canModify(latestBooking.event_date);
 		if (!policy.allowed) {
 			throw new Error(policy.isPast ? "PAST_EVENT" : "POLICY_VIOLATION");
 		}
 
-		// 4. External Cleanups (Best Effort)
-		if (latestBooking.google_calendar_event_id) {
-			await deleteCalendarEvent(latestBooking.google_calendar_event_id).catch((err) => console.error("GCal Cleanup Error:", err));
-		}
-		if (latestBooking.zoom_meeting_id) {
-			await deleteZoomMeeting(latestBooking.zoom_meeting_id).catch((err) => console.error("Zoom Cleanup Error:", err));
-		}
-
-		// 5. Update Database
+		// 3. Update Database FIRST
+		// Doing this before external calls makes the system "feel" faster and more reliable
 		await BookingRepository.updateStatus(latestBooking.id, "cancelled");
 
-		// 6. Emails
+		// 4. Parallel External Cleanups + Emails
+		// We combine all network tasks into one single parallel block
+		const cleanupTasks: Promise<any>[] = [];
+
+		if (latestBooking.google_calendar_event_id) {
+			cleanupTasks.push(deleteCalendarEvent(latestBooking.google_calendar_event_id));
+		}
+		if (latestBooking.zoom_meeting_id) {
+			cleanupTasks.push(deleteZoomMeeting(latestBooking.zoom_meeting_id));
+		}
+
+		// 5. Wrap everything in a single wait to keep the serverless function alive
 		try {
 			const messages = await loadServerMessages(locale);
 
-			// We MUST await this to ensure the serverless function stays alive
 			await Promise.all([
+				...cleanupTasks.map((p) => p.catch((err) => console.error("Cleanup Error:", err))),
 				EmailService.sendCancelUser({
 					locale,
 					firstName: latestBooking.first_name,
@@ -223,13 +237,12 @@ export const BookingService = {
 					messages,
 					fromEmail: process.env.FROM_EMAIL || "",
 					toEmail: latestBooking.email,
-				}),
-				EmailService.sendCancelLecturer(latestBooking.first_name, latestBooking.last_name, latestBooking.email, new Date(latestBooking.event_date), process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || ""),
+				}).catch((err) => console.error("User Email Error:", err)),
+				EmailService.sendCancelLecturer(latestBooking.first_name, latestBooking.last_name, latestBooking.email, new Date(latestBooking.event_date), process.env.FROM_EMAIL || "", process.env.LECTURER_EMAIL || "").catch((err) => console.error("Lecturer Email Error:", err)),
 			]);
-			console.log("Cancellation emails sent successfully");
-		} catch (emailError) {
-			// Log the error but don't fail the cancellation since the DB/Zoom/Calendar are done
-			console.error("⚠️ Cancellation Email Dispatch Error:", emailError);
+		} catch (criticalError) {
+			// This handles errors in loadServerMessages or other prep logic
+			console.error("Post-cancellation processing error:", criticalError);
 		}
 
 		return { success: true };
@@ -279,21 +292,25 @@ export const BookingService = {
 		const parts = userDateStr.split("-").map(Number);
 		const baseDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
 
-		// Check days around the target to handle timezone rollovers
+		// Days around target to handle timezone rollovers
 		const datesToCheck = [new Date(baseDate.getTime() - 86400000).toISOString().split("T")[0], userDateStr, new Date(baseDate.getTime() + 86400000).toISOString().split("T")[0]];
 
-		const availableSlots: any[] = [];
-
-		for (const jstDateStr of datesToCheck) {
-			// Fetch events for this specific JST day
-			const eventsRes = await calendar.events.list({
+		// 🔥 PERFORMANCE FIX: Fetch all days in parallel
+		const eventPromises = datesToCheck.map(async (jstDateStr) => {
+			const res = await calendar.events.list({
 				calendarId: CALENDAR_ID,
 				timeMin: new Date(`${jstDateStr}T00:00:00+09:00`).toISOString(),
 				timeMax: new Date(`${jstDateStr}T23:59:59+09:00`).toISOString(),
 				singleEvents: true,
 			});
+			return { jstDateStr, events: res.data.items ?? [] };
+		});
 
-			const events = eventsRes.data.items ?? [];
+		const results = await Promise.all(eventPromises);
+		const availableSlots: any[] = [];
+
+		// Process results
+		for (const { jstDateStr, events } of results) {
 			const [y, m, d] = jstDateStr.split("-").map(Number);
 			const jstDayOfWeek = new Date(y, m - 1, d).getDay();
 			const jstSlots = weeklySlots[jstDayOfWeek] ?? [];
@@ -306,17 +323,16 @@ export const BookingService = {
 				// 1. Policy: 4-hour lead time
 				if (slotStart.getTime() - now.getTime() < FOUR_HOURS_MS) continue;
 
-				// 2. Conflict: Check if any event overlaps this 30-min slot
+				// 2. Conflict: Check overlaps
 				const hasConflict = events.some((ev) => {
 					if (!ev.start?.dateTime || !ev.end?.dateTime) return false;
 					return slotStart < new Date(ev.end.dateTime) && slotEnd > new Date(ev.start.dateTime);
 				});
 				if (hasConflict) continue;
 
-				// 3. Timezone: Convert JST slot to User's local view
+				// 3. Timezone: Convert
 				const { displayTime, displayDate } = convertJSTToUserTimezone(jstDateStr, jstTime, userTimezone);
 
-				// Only keep slots that appear on the user's selected date in their timezone
 				if (displayDate === userDateStr) {
 					availableSlots.push({
 						displayTime,

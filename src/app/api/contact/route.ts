@@ -1,171 +1,87 @@
-import { NextResponse } from "next/server";
-import { Resend } from "resend";
-
+import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Validators } from "@/src/utils/validation/validators";
-import { ValidationError } from "@/src/utils/validation/ErrorValidator";
-import { sanitizeEmailMessage } from "@/src/utils/sanitizeEmailMessage";
-import { getOrCreateSession } from "@/src/utils/db/getOrCreateSession";
-import { query } from "@/src/utils/neon";
-
-/* ----------------------------- Rate Limiting ----------------------------- */
+import { getErrorStatus } from "@/src/utils/errors";
+import { ContactService } from "@/src/services/contact.service";
+import { SessionService } from "@/src/services/session.service";
 
 const redis = Redis.fromEnv();
-
 const limiter = new Ratelimit({
 	redis,
-	limiter: Ratelimit.slidingWindow(5, "15 m"),
+	limiter: Ratelimit.slidingWindow(5, "15 m"), // Note: "15 m" works, but "15m" is standard for Upstash
 });
-
-/* ------------------------------ Types ----------------------------------- */
-
-interface ContactBody {
-	firstName: unknown;
-	lastName: unknown;
-	email: unknown;
-	message: unknown;
-	company?: unknown; // honeypot
-}
-
-function isContactBody(value: unknown): value is ContactBody {
-	return typeof value === "object" && value !== null && "firstName" in value && "lastName" in value && "email" in value && "message" in value;
-}
-
-/* --------------------------- Bot Detection ------------------------------- */
 
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]{1,50}$/;
 
-function looksLikeBotMessage(text: string) {
-	if (!text.includes(" ")) return true;
-	if (/^[A-Za-z0-9]{15,}$/.test(text)) return true;
-	if (/[A-Z]{6,}/.test(text)) return true;
-	return false;
-}
+export async function POST(req: NextRequest) {
+	console.log("--- API Route Timer Start ---");
+	console.time("⏱️ FULL_ROUTE_EXECUTION");
 
-/* -------------------------------- Handler -------------------------------- */
-
-export async function POST(req: Request) {
 	try {
-		/* ---------- Content-Type ---------- */
-		const contentType = req.headers.get("content-type") ?? "";
-		if (!contentType.includes("application/json")) {
-			return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
-		}
+		console.time("⏱️ BODY_PARSE");
+		const rawBody = await req.text();
+		if (!rawBody) return Response.json({ error: "Empty body" }, { status: 400 });
+		const body = JSON.parse(rawBody);
+		console.timeEnd("⏱️ BODY_PARSE");
 
-		/* ---------- Parse JSON ---------- */
-		let body: unknown;
-		try {
-			body = await req.json();
-		} catch {
-			return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-		}
-
-		/* ---------- Shape Guard ---------- */
-		if (!isContactBody(body)) {
-			return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-		}
-
-		/* ---------- Honeypot (silent drop) ---------- */
-		if ("company" in body && body.company) {
-			return NextResponse.json({ success: true });
-		}
+		// Honeypot
+		if (body.company) return Response.json({ success: true });
 
 		const { firstName, lastName, email, message } = body;
 
-		/* ---------- Validation ---------- */
+		// 1. Validation
 		Validators.required(firstName, "First name");
-		Validators.string(firstName, "First name");
-
 		Validators.required(lastName, "Last name");
-		Validators.string(lastName, "Last name");
-
 		Validators.required(email, "Email");
 		Validators.email(email);
-
 		Validators.required(message, "Message");
-		Validators.minLength(message, 10, "Message");
-		Validators.maxLength(message, 2000, "Message");
 
-		if (!nameRegex.test(String(firstName))) {
-			throw new ValidationError("Invalid first name");
+		if (!nameRegex.test(String(firstName)) || !nameRegex.test(String(lastName))) {
+			return Response.json({ error: "Invalid name format" }, { status: 400 });
 		}
 
-		if (!nameRegex.test(String(lastName))) {
-			throw new ValidationError("Invalid last name");
-		}
+		// 2. Session Initialization
+		console.time("⏱️ SESSION_INIT");
+		// Calling the static method from your SessionService class
+		const { sessionId } = await SessionService.getOrCreate(req);
+		console.timeEnd("⏱️ SESSION_INIT");
 
-		if (looksLikeBotMessage(String(message))) {
-			return NextResponse.json({ success: true });
-		}
-
-		/* ---------- Session ---------- */
-		const { sessionId, isNew } = await getOrCreateSession(req);
-
-		/* ---------- Rate Limit ---------- */
-		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown-ip";
-
-		const identifier = `${sessionId ?? "no-session"}:${ip}`;
-
-		const { success } = await limiter.limit(identifier);
+		// 3. Rate Limit Check
+		console.time("⏱️ RATE_LIMIT_CHECK");
+		const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+		const { success } = await limiter.limit(`${sessionId}:${ip}`);
+		console.timeEnd("⏱️ RATE_LIMIT_CHECK");
 
 		if (!success) {
-			return NextResponse.json({ error: "Too many messages. Please wait and try again." }, { status: 429 });
+			return Response.json({ error: "Too many messages. Please try later." }, { status: 429 });
 		}
 
-		/* ---------- Store ---------- */
-		const result = await query(
-			`INSERT INTO profitize.contact_messages
-       (session_id, first_name, last_name, email, message)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id`,
-			[sessionId, String(firstName), String(lastName), String(email).toLowerCase().trim(), String(message)],
-		);
-
-		const messageId = result.rows[0].id;
-
-		/* ---------- Email ---------- */
-		const safeMessage = sanitizeEmailMessage(String(message)).replace(/\n/g, "<br />");
-
-		const resend = new Resend(process.env.RESEND_API_KEY);
-
-		await resend.emails.send({
-			from: process.env.FROM_EMAIL!,
-			to: [process.env.LECTURER_EMAIL!],
-			replyTo: String(email).toLowerCase().trim(),
-			subject: `New Contact Message (ID: ${messageId})`,
-			html: `
-        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; padding: 20px;">
-          <h2 style="color: #2563eb;">New Contact Message</h2>
-
-          <p><strong>Message ID:</strong> ${messageId}</p>
-          <p><strong>Session ID:</strong> ${sessionId}</p>
-          <p><strong>First Name:</strong> ${firstName}</p>
-          <p><strong>Last Name:</strong> ${lastName}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Message:</strong><br />${safeMessage}</p>
-
-          <hr style="margin: 20px 0;" />
-          <p style="font-size: 0.9em; color: #666;">— Contact System</p>
-        </div>
-      `,
+		// 4. Service Delegation
+		await ContactService.handleContactMessage({
+			firstName: String(firstName),
+			lastName: String(lastName),
+			email: String(email),
+			message: String(message),
+			sessionId,
 		});
 
-		/* ---------- Response ---------- */
+		// 5. Response & Cookie Management
+		// We set the cookie every time to refresh the expiration and repair missing cookies
 		const res = NextResponse.json({ success: true });
+		res.headers.set("Set-Cookie", `sessionId=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
 
-		if (isNew) {
-			res.headers.set("Set-Cookie", `sessionId=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Secure`);
-		}
+		console.timeEnd("⏱️ FULL_ROUTE_EXECUTION");
+		console.log("--- API Route Timer End ---");
 
 		return res;
-	} catch (error) {
-		console.error("CONTACT API ERROR:", error);
+	} catch (err: any) {
+		console.error("CONTACT API ERROR:", err.message);
+		// Ensure the timer stops even on failure
+		try {
+			console.timeEnd("⏱️ FULL_ROUTE_EXECUTION");
+		} catch (e) {}
 
-		if (error instanceof ValidationError) {
-			return NextResponse.json({ error: error.message }, { status: error.status });
-		}
-
-		return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+		return Response.json({ error: err.message || "Internal Server Error" }, { status: getErrorStatus(err.message) });
 	}
 }

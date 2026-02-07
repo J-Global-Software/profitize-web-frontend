@@ -20,7 +20,7 @@ export function generatePlainTextEmail(locale: string, greetingName: string, dat
 	return `${interpolate(messages.server.email.hi, { name: greetingName })}
 
 ${messages.server.email.thanks}
-${interpolate(messages.server.email.seeYou, { date: data.date, time: data.time })}
+${interpolate(messages.server.email.seeYou, { date: data.date, time: data.time })} JST
 
 ${messages.server.email.serviceBooked}: ${messages.server.email.serviceName}
 ${messages.server.email.staff}: ${messages.server.email.staffName}
@@ -94,7 +94,7 @@ export function generateHTMLEmail(locale: string, htmlGreetingName: string, data
                 </tr>
                 <tr>
                   <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px;">${messages.server.email.dateTimeLabel}</td>
-                  <td style="font-size:15px; font-weight:600; color:#1e293b;">${data.date} ${data.time}</td>
+                  <td style="font-size:15px; font-weight:600; color:#1e293b;">${data.date} ${data.time} JST</td>
                 </tr>
               </table>
 
@@ -418,4 +418,55 @@ A consultation session has been cancelled.
 </body>
 </html>
 `;
+}
+
+/**
+ * CONTACT NOTIFICATION - HTML for Lecturer
+ */
+export function generateContactNotificationHTML(params: { messageId: string; sessionId: string; firstName: string; lastName: string; email: string; safeMessage: string }): string {
+	return `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0; padding:0; background-color:#f8fafc; font-family:Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 20px 0; font-size:20px; font-weight:800; color:#2563eb; line-height:1.2;">
+                New Contact Message
+              </h2>
+
+              <div style="font-size:15px; line-height:1.6; color:#333;">
+                <p style="margin: 0 0 10px 0;"><strong>Message ID:</strong> ${params.messageId}</p>
+                <p style="margin: 0 0 10px 0;"><strong>Session ID:</strong> ${params.sessionId}</p>
+                <p style="margin: 0 0 10px 0;"><strong>First Name:</strong> ${params.firstName}</p>
+                <p style="margin: 0 0 10px 0;"><strong>Last Name:</strong> ${params.lastName}</p>
+                <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${params.email}</p>
+                
+                <div style="margin-top: 20px; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
+                  <strong style="display: block; margin-bottom: 8px; color: #64748b; font-size: 12px; text-transform: uppercase;">Message:</strong>
+                  <div style="color: #1e293b;">${params.safeMessage}</div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+                
+                <p style="margin:0; font-size:13px; color:#666; text-align: center;">
+                  — Contact Notification System
+                </p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
 }

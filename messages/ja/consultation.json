@@ -44,7 +44,9 @@
         "wed": "水",
         "thu": "木",
         "fri": "金",
-        "sat": "土"
+        "sat": "土",
+        "previousMonth": "前の月",
+        "nextMonth": "次の月"
     },
     "booking": {
         "title": "戦略セッションの予約",
@@ -67,6 +69,9 @@
         "errorFields": "必須項目をすべて入力してください",
         "errorDateTime": "日付と時間を選択してください",
         "timezone_notice": "表示時間はあなたのローカルタイムゾーン（{timezone}）に基づいています",
-        "timezone_label": "タイムゾーン: {timezone}"
+        "timezone_label": "タイムゾーン: {timezone}",
+        "successTitle": "ご予約が完了しました",
+        "successSubtitle": "無料相談のご予約ありがとうございます。確定メールを送信しましたのでご確認ください。",
+        "confirmedTime": "確定した日時"
     }
 }

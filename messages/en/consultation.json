@@ -5,12 +5,14 @@
         "returnHome": "Return Home",
         "loading": "Loading...",
         "updating": "Updating...",
-        "more": "more"
+        "more": "more",
+        "retry": "Try again"
     },
     "errors": {
         "oops": "Oops!",
         "requestFailed": "Request failed",
-        "fetchBookingFailed": "Failed to fetch booking"
+        "fetchBookingFailed": "Failed to fetch booking",
+        "fetchSlotsFailed": "Failed to load time slots. Please try again."
     },
     "manage": {
         "title": "Manage Your Booking",
@@ -25,7 +27,7 @@
         "bookingRescheduled": "Booking Rescheduled",
         "bookingCancelled": "Booking Cancelled",
         "rescheduleSuccess": "Your consultation has been successfully rescheduled. A confirmation email has been sent with the updated details.",
-        "cancelSuccess": "Your consultation has been cancelled successfully. We’re sorry to see you go, but you’re always welcome to book again.",
+        "cancelSuccess": "Your consultation has been cancelled successfully. We're sorry to see you go, but you're always welcome to book again.",
         "newDateTime": "New Date & Time",
         "availableSlots": "Available Time Slots",
         "selectDate": "Select a date to see available times",
@@ -44,7 +46,9 @@
         "wed": "Wed",
         "thu": "Thu",
         "fri": "Fri",
-        "sat": "Sat"
+        "sat": "Sat",
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month"
     },
     "booking": {
         "title": "Schedule Your Strategy Session",
@@ -67,6 +71,9 @@
         "errorFields": "Please fill in all required fields",
         "errorDateTime": "Please select a date and time",
         "timezone_notice": "Times shown in your local timezone ({timezone})",
-        "timezone_label": "Timezone: {timezone}"
+        "timezone_label": "Timezone: {timezone}",
+        "successTitle": "Booking Confirmed!",
+        "successSubtitle": "Thank you for booking a consultation. A calendar invitation has been sent to your email.",
+        "confirmedTime": "Confirmed Date & Time"
     }
 }

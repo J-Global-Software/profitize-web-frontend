@@ -1,15 +1,16 @@
 // src/utils/validation/sanitize.ts
 
-import { time } from "console";
-
 /**
  * Strips control characters (newlines, tabs, nulls, etc.) from a string.
  * Safe for plain-text contexts: DB, calendar descriptions, Zoom topics.
  */
-export function sanitizePlainText(input: string): string {
+export function sanitizePlainText(input: unknown): string {
+	// If it's not a string, return an empty string instead of crashing
+	if (typeof input !== "string") return "";
+
 	return input
-		.replace(/\\x[0-9A-Fa-f]{2}/g, "") // remove literal \x00 sequences
-		.replace(/[\x00-\x1F\x7F]/g, "") // remove control chars including null
+		.replace(/\\x[0-9A-Fa-f]{2}/g, "")
+		.replace(/[\x00-\x1F\x7F]/g, "")
 		.trim();
 }
 
@@ -35,7 +36,7 @@ interface SanitizeParams {
 	message: string;
 	date: string;
 	time: string;
-	timezone?: string; // Add this
+	timezone?: string;
 }
 export function sanitizeBookingInputs(raw: SanitizeParams) {
 	return {

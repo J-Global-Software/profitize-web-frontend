@@ -18,7 +18,6 @@ export async function generatePageMetadata(props: PageProps, parent: ResolvingMe
 
 	const t = await getTranslations({ locale, namespace });
 
-	// ✅ THIS is where your snippet is used
 	const languages = Object.fromEntries(
 		I18N.locales.map((loc) => [
 			loc, // ja / en

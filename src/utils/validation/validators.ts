@@ -41,4 +41,18 @@ export const Validators = {
 			this.maxLength(data.message, 2000, "Message");
 		}
 	},
+	validateContact(data: any): void {
+		this.required(data.firstName, "First Name");
+		this.maxLength(data.firstName, 50, "First Name");
+
+		this.required(data.lastName, "Last Name");
+		this.maxLength(data.lastName, 50, "Last Name");
+
+		this.required(data.email, "Email");
+		this.email(data.email);
+
+		this.required(data.message, "Message");
+		this.minLength(data.message, 10, "Message");
+		this.maxLength(data.message, 5000, "Message");
+	},
 };

@@ -4,7 +4,6 @@ import createNextIntlPlugin from "next-intl/plugin";
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
 
-	// ✅ Forces `/page/en/` instead of `/page/en`
 	trailingSlash: true,
 	images: {
 		remotePatterns: [

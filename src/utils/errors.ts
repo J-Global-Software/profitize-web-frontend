@@ -19,6 +19,10 @@ const ERROR_CODE_MAP: Record<string, number> = {
 	// Auth/Session Errors
 	UNAUTHORIZED: 401,
 	SESSION_EXPIRED: 401,
+
+	VALIDATION_ERROR: 400,
+	MESSAGE_TOO_LONG: 413,
+	PAYLOAD_TOO_LARGE: 413,
 };
 
 export function getErrorStatus(message: string): number {

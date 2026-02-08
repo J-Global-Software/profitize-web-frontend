@@ -1,6 +1,6 @@
 // src/services/session.service.ts
 import { SessionRepository } from "@/src/repositories/session.repository";
-import { getCookie } from "../utils/cookies.utils";
+import { getSessionCookie } from "../utils/session-cookies.util";
 
 export class SessionService {
 	/**
@@ -9,8 +9,7 @@ export class SessionService {
 	 */
 	static async getOrCreate(req: Request) {
 		// 1. Check Cookie first
-		const cookieSessionId = getCookie(req, "sessionId");
-
+		const cookieSessionId = getSessionCookie(req);
 		if (cookieSessionId) {
 			const existing = await SessionRepository.findById(cookieSessionId);
 			if (existing) return { sessionId: cookieSessionId, isNew: false };

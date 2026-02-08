@@ -15,12 +15,12 @@ function isAdminRoute(pathname: string) {
 export default function proxy(req: NextRequest) {
 	const { pathname } = req.nextUrl;
 
-	// 1️⃣ Always allow admin login
+	// 1️ Always allow admin login
 	if (isAdminLogin(pathname)) {
 		return intlMiddleware(req);
 	}
 
-	// 2️⃣ Protect admin routes
+	// 2️ Protect admin routes
 	const isLoggedIn = req.cookies.get("admin_session");
 
 	if (isAdminRoute(pathname) && !isLoggedIn) {
@@ -30,7 +30,7 @@ export default function proxy(req: NextRequest) {
 		return NextResponse.redirect(new URL(loginPath, req.url));
 	}
 
-	// 3️⃣ Everything else
+	// 3️ Everything else
 	return intlMiddleware(req);
 }
 

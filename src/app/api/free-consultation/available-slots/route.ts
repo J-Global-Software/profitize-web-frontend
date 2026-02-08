@@ -7,7 +7,7 @@ import { getErrorStatus } from "@/src/utils/errors";
 const redis = Redis.fromEnv();
 const limiter = new Ratelimit({
 	redis,
-	limiter: Ratelimit.slidingWindow(20, "1m"),
+	limiter: Ratelimit.slidingWindow(30, "1m"),
 });
 
 export async function POST(req: NextRequest) {

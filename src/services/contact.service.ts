@@ -7,18 +7,14 @@ export const ContactService = {
 	 * Orchestrates the contact message flow with diagnostic timing
 	 */
 	async handleContactMessage(data: { firstName: string; lastName: string; email: string; message: string; sessionId: string }) {
-		console.log("--- Contact Submission Debug Start ---");
-
-		// 1. Database Storage Timer
-		console.time("⏱️ DB_SAVE");
+		// 1. Persist Raw (Parameterized query handles SQL safety)
 		const messageId = await ContactRepository.create(data);
-		console.timeEnd("⏱️ DB_SAVE");
 
-		// 2. Formatting
+		// 2. Sanitize specifically for HTML Emails
+		// This strips scripts/styles but keeps line breaks
 		const safeMessage = sanitizeEmailMessage(data.message).replace(/\n/g, "<br />");
 
-		// 3. Email Delivery Timer
-		console.time("⏱️ EMAIL_SEND");
+		// 3. Notify Lecturer
 		await EmailService.sendContactNotification({
 			messageId: String(messageId),
 			sessionId: data.sessionId,
@@ -29,9 +25,6 @@ export const ContactService = {
 			fromEmail: process.env.FROM_EMAIL!,
 			toEmail: process.env.LECTURER_EMAIL!,
 		});
-		console.timeEnd("⏱️ EMAIL_SEND");
-
-		console.log("--- Contact Submission Debug End ---");
 
 		return { messageId };
 	},

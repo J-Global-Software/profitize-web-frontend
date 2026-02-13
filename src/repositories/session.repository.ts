@@ -11,12 +11,12 @@ export const SessionRepository = {
 	 * Validates if a session ID exists in the database
 	 */
 	async findById(id: string): Promise<{ id: string } | null> {
-		const result = await query(
+		const result = await query<{ id: string }>(
 			`
-            SELECT id 
-            FROM profitize.client_sessions 
-            WHERE id = $1
-        `,
+			SELECT id 
+			FROM profitize.client_sessions 
+			WHERE id = $1
+		`,
 			[id],
 		);
 

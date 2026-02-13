@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server"; // Removed unused NextResponse
 import { BookingService } from "@/src/services/booking.service";
 import { getErrorStatus } from "@/src/utils/errors";
 import { Redis } from "@upstash/redis";
@@ -11,13 +11,18 @@ const limiter = new Ratelimit({
 	limiter: Ratelimit.slidingWindow(10, "1m"),
 });
 
-export async function GET(req: NextRequest, context: { params: Promise<{ token: string }> }) {
+// Define the interface for the Route Params
+interface RouteContext {
+	params: Promise<{ token: string }>;
+}
+
+export async function GET(req: NextRequest, context: RouteContext) {
 	// 1. Rate Limiting: Protect against token scraping
 	const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 	const { success } = await limiter.limit(`manage:${ip}`);
 
 	if (!success) {
-		return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+		return Response.json({ error: "Too many requests" }, { status: 429 });
 	}
 
 	try {
@@ -27,21 +32,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ token: 
 		// 3. Validation: UUID format check
 		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 		if (!token || !uuidRegex.test(token)) {
-			return NextResponse.json({ error: "Invalid or missing token" }, { status: 400 });
+			return Response.json({ error: "Invalid or missing token" }, { status: 400 });
 		}
 
 		// 4. Service Delegation
-		// This should return info like booking details, cancellation window status, etc.
 		const data = await BookingService.getBookingManagementData(token);
 
 		if (!data) {
-			return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+			return Response.json({ error: "Booking not found" }, { status: 404 });
 		}
 
-		return NextResponse.json(data, { status: 200 });
-	} catch (err: any) {
+		return Response.json(data, { status: 200 });
+	} catch (err: unknown) {
+		// Safe error handling
+		const message = err instanceof Error ? err.message : "Internal Server Error";
+
 		console.error("[GET Booking Error]", err);
-		const status = getErrorStatus(err.message);
-		return NextResponse.json({ error: err.message || "Internal Server Error" }, { status });
+
+		const status = getErrorStatus(message);
+
+		return Response.json({ error: message }, { status });
 	}
 }

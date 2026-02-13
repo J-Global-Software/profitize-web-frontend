@@ -54,9 +54,12 @@ export async function POST(req: NextRequest) {
 		setSessionCookie(res, sessionId);
 
 		return res;
-	} catch (err: any) {
+	} catch (err: unknown) {
+		const errorMessage = err instanceof Error ? err.message : "Internal Server Error";
+
 		console.error("[Booking Error]", err);
-		const status = getErrorStatus(err.message);
-		return NextResponse.json({ error: err.message || "Internal Server Error" }, { status });
+		const status = getErrorStatus(errorMessage);
+
+		return Response.json({ error: errorMessage }, { status });
 	}
 }

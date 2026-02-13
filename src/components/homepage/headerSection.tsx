@@ -7,13 +7,40 @@ import { usePathname, useRouter } from "next/navigation";
 import { Link } from "@/src/i18n/navigation";
 
 // --- React Icons Imports ---
-import { HiMenu, HiX } from "react-icons/hi"; // 20px Solid or Outline
-import { HiChevronDown } from "react-icons/hi2"; // Newer Heroicons v2
+import { HiMenu, HiX } from "react-icons/hi";
+import { HiChevronDown } from "react-icons/hi2";
 
 const locales = ["en", "ja"] as const;
+type Locale = (typeof locales)[number];
+
+/**
+ * 1. Move NavLinks outside the main component to prevent re-creation on every render.
+ * This fixes the 'react-hooks/static-components' warning.
+ */
+interface NavLinksProps {
+	t: (key: string) => string;
+	onClick?: () => void;
+}
+
+const NavLinks = ({ t, onClick }: NavLinksProps) => (
+	<>
+		<Link href="#who-we-help" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
+			{t("header.nav.whoWeHelp")}
+		</Link>
+		<Link href="#industries" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
+			{t("header.nav.industries")}
+		</Link>
+		<Link href="#services" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
+			{t("header.nav.services")}
+		</Link>
+		<Link href="#resources" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
+			{t("header.nav.resources")}
+		</Link>
+	</>
+);
 
 export default function Header() {
-	const locale = useLocale();
+	const locale = useLocale() as Locale;
 	const t = useTranslations("homepage");
 	const pathname = usePathname();
 	const router = useRouter();
@@ -34,8 +61,15 @@ export default function Header() {
 
 	const handleLanguageChange = (lng: string) => {
 		const segments = pathname.split("/").filter(Boolean);
-		if (locales.includes(segments[0] as any)) segments[0] = lng;
-		else segments.unshift(lng);
+
+		// Type-safe check for locale segment
+		const firstSegmentIsLocale = (locales as readonly string[]).includes(segments[0]);
+
+		if (firstSegmentIsLocale) {
+			segments[0] = lng;
+		} else {
+			segments.unshift(lng);
+		}
 
 		router.replace("/" + segments.join("/"));
 		setLangOpen(false);
@@ -53,23 +87,6 @@ export default function Header() {
 		}
 	};
 
-	const NavLinks = ({ onClick }: { onClick?: () => void }) => (
-		<>
-			<Link href="#who-we-help" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
-				{t("header.nav.whoWeHelp")}
-			</Link>
-			<Link href="#industries" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
-				{t("header.nav.industries")}
-			</Link>
-			<Link href="#services" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
-				{t("header.nav.services")}
-			</Link>
-			<Link href="#resources" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors">
-				{t("header.nav.resources")}
-			</Link>
-		</>
-	);
-
 	return (
 		<header className="sticky top-0 z-50 bg-white border-b border-[#f0f2f4]">
 			<div className="max-w-[1200px] mx-auto h-[72px] flex items-center justify-between px-6">
@@ -79,7 +96,8 @@ export default function Header() {
 
 				<div className="flex items-center gap-3">
 					<nav className="hidden lg:flex items-center gap-8">
-						<NavLinks />
+						{/* Pass translation function to child */}
+						<NavLinks t={t} />
 						<Link href="/free-consultation" className="bg-[#1754cf] text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all">
 							{t("header.cta.bookConsultation")}
 						</Link>
@@ -90,7 +108,6 @@ export default function Header() {
 						<button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 hover:border-[#1754cf] transition-all duration-200">
 							<Image src={`/images/flags/${locale}.png`} alt={locale} width={20} height={14} className="rounded-sm object-cover" />
 							<span className="text-gray-700 text-sm font-medium">{getLanguageName(locale)}</span>
-							{/* HiChevronDown from Hi2 */}
 							<HiChevronDown className={`text-gray-600 transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`} size={18} />
 						</button>
 
@@ -110,7 +127,6 @@ export default function Header() {
 						)}
 					</div>
 
-					{/* HiMenu Toggle */}
 					<button onClick={() => setMenuOpen(true)} className="lg:hidden p-2 rounded-md hover:bg-gray-100 text-gray-700" aria-label={t("header.aria.openMenu")}>
 						<HiMenu size={26} />
 					</button>
@@ -130,7 +146,7 @@ export default function Header() {
 					</div>
 
 					<nav className="flex flex-col gap-6 px-6 py-8 text-lg font-medium flex-1">
-						<NavLinks onClick={() => setMenuOpen(false)} />
+						<NavLinks t={t} onClick={() => setMenuOpen(false)} />
 						<Link href="/free-consultation" onClick={() => setMenuOpen(false)} className="mt-6 bg-[#1754cf] text-white text-center font-bold py-3 rounded-lg shadow-md">
 							{t("header.cta.bookConsultation")}
 						</Link>

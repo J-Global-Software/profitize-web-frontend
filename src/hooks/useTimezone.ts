@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function useTimezone() {
-	const [timezone, setTimezone] = useState<string>("Asia/Tokyo");
-
-	useEffect(() => {
+	// We use a "lazy initializer" function inside useState
+	const [timezone] = useState<string>(() => {
 		try {
-			const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-			setTimezone(tz || "Asia/Tokyo");
+			return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Tokyo";
 		} catch (e) {
 			console.error("Timezone detection failed", e);
+			return "Asia/Tokyo";
 		}
-	}, []);
+	});
 
 	return timezone;
 }

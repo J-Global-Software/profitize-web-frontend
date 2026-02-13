@@ -1,7 +1,9 @@
 import { ValidationError } from "./ErrorValidator";
+import { BookingPayload } from "@/src/types/booking";
+import { CreateContactDTO } from "@/src/types/contact";
 
 export const Validators = {
-	// --- Existing atomic methods ---
+	// --- Atomic methods ---
 	required(value: unknown, field: string): void {
 		if (value === undefined || value === null || value === "") {
 			throw new ValidationError(`${field} is required`);
@@ -18,14 +20,18 @@ export const Validators = {
 		if (!isValid) throw new ValidationError(`Invalid ${field.toLowerCase()}`);
 	},
 	minLength(value: unknown, min: number, field: string): void {
-		if (typeof value !== "string" || value.length < min) throw new ValidationError(`${field} must be at least ${min} characters`);
+		if (typeof value !== "string" || value.length < min) {
+			throw new ValidationError(`${field} must be at least ${min} characters`);
+		}
 	},
 	maxLength(value: unknown, max: number, field: string): void {
-		if (typeof value !== "string" || value.length > max) throw new ValidationError(`${field} must be at most ${max} characters`);
+		if (typeof value !== "string" || value.length > max) {
+			throw new ValidationError(`${field} must be at most ${max} characters`);
+		}
 	},
 
-	// --- NEW: Grouped Schema Validation ---
-	validateBooking(data: any): void {
+	// --- Grouped Schema Validation ---
+	validateBooking(data: Partial<BookingPayload>): void {
 		this.required(data.date, "Date");
 		this.required(data.time, "Time");
 		this.required(data.firstName, "First Name");
@@ -41,7 +47,8 @@ export const Validators = {
 			this.maxLength(data.message, 2000, "Message");
 		}
 	},
-	validateContact(data: any): void {
+
+	validateContact(data: Partial<CreateContactDTO>): void {
 		this.required(data.firstName, "First Name");
 		this.maxLength(data.firstName, 50, "First Name");
 

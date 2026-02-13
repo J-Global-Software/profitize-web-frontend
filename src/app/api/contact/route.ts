@@ -71,9 +71,12 @@ export async function POST(req: NextRequest) {
 		setSessionCookie(res, sessionId);
 
 		return res;
-	} catch (err: any) {
-		console.error("Contact Form Error:", err);
-		const status = getErrorStatus(err.message);
-		return NextResponse.json({ error: err.message || "Internal Server Error" }, { status });
+	} catch (err) {
+		// Type narrowing for the error object
+		const errorMessage = err instanceof Error ? err.message : "Internal Server Error";
+		const status = getErrorStatus(errorMessage);
+
+		console.error("Contact Form Error:", errorMessage);
+		return NextResponse.json({ error: errorMessage }, { status });
 	}
 }

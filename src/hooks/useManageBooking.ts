@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Booking, TimeSlot, ManageBookingResponse } from "@/src/types/booking";
+import { Booking, ManageBookingResponse } from "@/src/types/bookingFrontend";
 import { useTimezone } from "./useTimezone";
 
 export function useManageBooking() {
@@ -25,11 +25,14 @@ export function useManageBooking() {
 				const res = await fetch(`/api/free-consultation/manage/${token}`);
 				if (!res.ok) throw new Error(t("errors.fetchBookingFailed"));
 				const data: ManageBookingResponse = await res.json();
+
 				setBooking(data.booking);
 				setCanReschedule(data.canReschedule);
 				setCanCancel(data.canCancel);
-			} catch (err: any) {
-				setError(err.message);
+			} catch (err) {
+				// Type narrowing for unknown error
+				const errorMessage = err instanceof Error ? err.message : t("errors.fetchBookingFailed");
+				setError(errorMessage);
 			} finally {
 				setLoading(false);
 			}
@@ -37,20 +40,15 @@ export function useManageBooking() {
 		if (token) fetchBooking();
 	}, [token, t]);
 
-	// Update the signature to accept 'data' instead of 'selectedSlot'
-	const handleAction = async (
-		type: "reschedule" | "cancel",
-		data?: { date: string; time: string }, // Changed from TimeSlot to simple object
-	) => {
+	const handleAction = async (type: "reschedule" | "cancel", data?: { date: string; time: string }) => {
 		setSubmitting(true);
 		try {
 			const res = await fetch(`/api/free-consultation/manage/${token}/${type}`, {
-				method: "POST",
+				method: type === "reschedule" ? "POST" : "GET",
 				headers: {
 					"Content-Type": "application/json",
 					"x-locale": locale,
 				},
-				// Logic change: Use the 'data' passed from the page
 				body:
 					type === "reschedule" && data
 						? JSON.stringify({
@@ -62,13 +60,16 @@ export function useManageBooking() {
 			});
 
 			if (!res.ok) {
-				const errorRes = await res.json();
+				// Explicitly typing the error response
+				const errorRes: { error?: string } = await res.json();
 				throw new Error(errorRes.error || "Request failed");
 			}
 
 			setSuccess(type);
-		} catch (err: any) {
-			toast.error(err.message || t("errors.requestFailed"));
+		} catch (err) {
+			// Type narrowing for toast notification
+			const errorMessage = err instanceof Error ? err.message : t("errors.requestFailed");
+			toast.error(errorMessage);
 		} finally {
 			setSubmitting(false);
 		}

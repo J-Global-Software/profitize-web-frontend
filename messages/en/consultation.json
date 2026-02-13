@@ -51,6 +51,10 @@
         "nextMonth": "Next month"
     },
     "booking": {
+        "seo": {
+            "title": "Schedule Your Free Strategy Session",
+            "description": "Book a free consultation today. Select a time that works for you and start growing your business with Profitize.jp."
+        },
         "title": "Schedule Your Strategy Session",
         "step1": "Select Time",
         "step2": "Details",

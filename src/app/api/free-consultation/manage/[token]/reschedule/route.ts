@@ -52,9 +52,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
 		setSessionCookie(res, sessionId);
 
 		return res;
-	} catch (err: any) {
-		console.error("Reschedule Route Error:", err.message);
-		const status = getErrorStatus(err.message);
-		return NextResponse.json({ error: err.message || "Internal Server Error" }, { status });
+	} catch (err: unknown) {
+		const message = err instanceof Error ? err.message : "Internal Server Error";
+		console.error("Reschedule Route Error:", message);
+		const status = getErrorStatus(message);
+		return Response.json({ error: message }, { status });
 	}
 }

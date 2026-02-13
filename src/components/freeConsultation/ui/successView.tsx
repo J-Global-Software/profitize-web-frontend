@@ -4,16 +4,18 @@ import { motion } from "framer-motion";
 import { Link } from "@/src/i18n/navigation";
 import { useTranslations } from "next-intl";
 import Header from "@/src/components/homepage/headerSection";
-import { TimeSlot } from "@/src/types/booking";
+import { TimeSlot } from "@/src/types/bookingFrontend";
+import { HiOutlineXCircle } from "react-icons/hi";
+import { HiOutlineCalendarDays } from "react-icons/hi2";
 
 interface SuccessViewProps {
-	// Add "book" to the type union
 	type: "reschedule" | "cancel" | "book";
 	slot: TimeSlot | null;
 	userTimezone: string;
+	hideHeader?: boolean;
 }
 
-export function SuccessView({ type, slot, userTimezone }: SuccessViewProps) {
+export function SuccessView({ type, slot, userTimezone, hideHeader }: SuccessViewProps) {
 	const t = useTranslations("consultation");
 
 	// Logic to differentiate UI states
@@ -25,7 +27,7 @@ export function SuccessView({ type, slot, userTimezone }: SuccessViewProps) {
 		<div className="w-full">
 			{/* If used inside FreeConsultationClient, you might want to hide 
                 the header if the parent already has one, or keep it for the standalone feel */}
-			<Header />
+			{!hideHeader && <Header />}{" "}
 			<main className="min-h-[70vh] flex items-center justify-center px-6 bg-[#fbfbfb]">
 				<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg w-full bg-white rounded-3xl shadow-xl border border-gray-100 p-10 text-center">
 					{/* Icon Logic */}
@@ -33,7 +35,7 @@ export function SuccessView({ type, slot, userTimezone }: SuccessViewProps) {
 						className={`mx-auto mb-6 flex items-center justify-center w-16 h-16 rounded-full 
                         ${isCancel ? "bg-red-50 text-red-600" : "bg-blue-50 text-[#1754cf]"}`}
 					>
-						<span className="material-symbols-outlined text-3xl">{isCancel ? "event_busy" : "event_available"}</span>
+						<div className="text-3xl">{isCancel ? <HiOutlineXCircle className="text-red-500" /> : <HiOutlineCalendarDays className="text-[#1754cf]" />}</div>{" "}
 					</div>
 
 					{/* Title Logic */}

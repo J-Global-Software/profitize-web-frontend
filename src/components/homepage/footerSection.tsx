@@ -3,6 +3,8 @@
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { ContactForm } from "./contacts-section/contactForm";
+// Import React Icons
+import { HiOutlineEnvelope, HiOutlinePhone } from "react-icons/hi2";
 
 export default function Footer() {
 	const t = useTranslations("homepage");
@@ -37,9 +39,9 @@ export default function Footer() {
 								<a href={`mailto:jon.lynch@profitize.jp`} className="group flex items-center gap-4">
 									<div
 										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
-											group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+                                            group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
 									>
-										<span className="material-symbols-outlined text-[22px]">mail</span>
+										<HiOutlineEnvelope className="text-[22px]" />
 									</div>
 
 									<div>
@@ -52,9 +54,9 @@ export default function Footer() {
 								<a href={`tel:03-3281-4303`} className="group flex items-center gap-4">
 									<div
 										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
-											group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
+                                            group-hover:bg-[#1754cf] group-hover:text-white transition-colors"
 									>
-										<span className="material-symbols-outlined text-[22px]">call</span>
+										<HiOutlinePhone className="text-[22px]" />
 									</div>
 
 									<div>

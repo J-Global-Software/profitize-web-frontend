@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
-import { BookingStep, TimeSlot } from "@/src/types/booking";
+import { BookingStep, TimeSlot } from "@/src/types/bookingFrontend";
 import { useTimezone } from "./useTimezone";
+
+// Define the shape of your form for better type inference
+export interface BookingFormData {
+	firstName: string;
+	lastName: string;
+	email: string;
+	message: string;
+}
 
 export function useBooking() {
 	const locale = useLocale();
@@ -13,31 +21,40 @@ export function useBooking() {
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 	const [loading, setLoading] = useState(false);
-	// Add success state
 	const [success, setSuccess] = useState<string | null>(null);
 
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<BookingFormData>({
 		firstName: "",
 		lastName: "",
 		email: "",
 		message: "",
 	});
 
-	const updateField = (field: keyof typeof formData, value: string) => {
+	// Using keyof BookingFormData ensures 'field' is never 'any'
+	const updateField = (field: keyof BookingFormData, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
 	const handleConfirm = async () => {
-		if (!selectedDate || !selectedSlot) return toast.error(t("booking.errorDateTime"));
-		if (!formData.firstName || !formData.lastName || !formData.email) return toast.error(t("booking.errorFields"));
+		// Validation logic
+		if (!selectedDate || !selectedSlot) {
+			return toast.error(t("booking.errorDateTime"));
+		}
+		if (!formData.firstName || !formData.lastName || !formData.email) {
+			return toast.error(t("booking.errorFields"));
+		}
 
 		setLoading(true);
 		try {
 			const res = await fetch("/api/free-consultation/book", {
 				method: "POST",
-				headers: { "Content-Type": "application/json", "x-locale": locale },
+				headers: {
+					"Content-Type": "application/json",
+					"x-locale": locale,
+				},
 				body: JSON.stringify({
 					...formData,
+					// Use optional chaining or defaults if these might be null
 					date: selectedSlot.jstDate,
 					time: selectedSlot.jstTime,
 					timezone: userTimezone,
@@ -46,10 +63,9 @@ export function useBooking() {
 
 			if (!res.ok) throw new Error("Booking failed");
 
-			// Instead of resetting step, set success state
 			setSuccess("book");
 			toast.success(t("booking.success"));
-		} catch (err) {
+		} catch {
 			toast.error(t("errors.requestFailed"));
 		} finally {
 			setLoading(false);
@@ -66,7 +82,7 @@ export function useBooking() {
 		formData,
 		updateField,
 		loading,
-		success, // Export success
+		success,
 		handleConfirm,
 		userTimezone,
 	};

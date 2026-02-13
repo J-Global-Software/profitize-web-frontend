@@ -90,10 +90,10 @@ export async function getZoomToken(): Promise<string> {
 export async function createZoomMeeting(topic: string, startTime: Date, duration = 30, registrants: ZoomRegistrant[] = []): Promise<{ meeting: ZoomMeetingResponse; registrantLinks: Record<string, string> }> {
 	const token = await getZoomToken();
 
-	// ✅ FIXED: Format date in JST without converting to UTC
+	// FIXED: Format date in JST without converting to UTC
 	const startTimeFormatted = formatDateForZoom(startTime, "Asia/Tokyo");
 
-	// 1️⃣ Create meeting
+	// 1 Create meeting
 	const res = await fetch("https://api.zoom.us/v2/users/me/meetings", {
 		method: "POST",
 		headers: {
@@ -126,7 +126,7 @@ export async function createZoomMeeting(topic: string, startTime: Date, duration
 
 	const meeting = (await res.json()) as ZoomMeetingResponse;
 
-	// 2️⃣ Add registrants and collect their join URLs
+	// 2 Add registrants and collect their join URLs
 	const registrantLinks: Record<string, string> = {};
 
 	for (const r of registrants) {
@@ -175,7 +175,7 @@ export async function deleteZoomMeeting(meetingId: string): Promise<void> {
 			throw new Error(`Failed to delete Zoom meeting: ${res.status} ${res.statusText} - ${text}`);
 		}
 	} catch (error) {
-		console.error(`❌ Failed to delete Zoom meeting ${meetingId}:`, error);
+		console.error(`Failed to delete Zoom meeting ${meetingId}:`, error);
 		throw new Error(`Failed to delete Zoom meeting: ${error instanceof Error ? error.message : "Unknown error"}`);
 	}
 }

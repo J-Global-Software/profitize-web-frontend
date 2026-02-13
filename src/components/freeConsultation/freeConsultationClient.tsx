@@ -6,7 +6,8 @@ import { useTranslations, useLocale } from "next-intl";
 import BookingCalendar from "./calendar";
 import { useBooking } from "@/src/hooks/useBooking";
 import { SuccessView } from "@/src/components/freeConsultation/ui/successView";
-
+import { ChangeEvent } from "react";
+type BookingFieldKey = "firstName" | "lastName" | "email" | "message";
 export default function FreeConsultationClient() {
 	const locale = useLocale();
 	const t = useTranslations("consultation");
@@ -18,11 +19,21 @@ export default function FreeConsultationClient() {
 	if (success) {
 		return (
 			<div className="min-h-screen bg-[#fbfbfb] flex items-center justify-center px-6 py-12">
-				<SuccessView type="book" slot={selectedSlot} userTimezone={userTimezone} />
+				<SuccessView hideHeader={true} type="book" slot={selectedSlot} userTimezone={userTimezone} />
 			</div>
 		);
 	}
-
+	// Explicitly type the name field config to remove 'any'
+	const nameFieldConfig: { label: string; field: Extract<BookingFieldKey, "firstName" | "lastName"> }[] =
+		locale === "ja"
+			? [
+					{ label: t("booking.lastName"), field: "lastName" },
+					{ label: t("booking.firstName"), field: "firstName" },
+				]
+			: [
+					{ label: t("booking.firstName"), field: "firstName" },
+					{ label: t("booking.lastName"), field: "lastName" },
+				];
 	return (
 		<div className="min-h-screen bg-[#fbfbfb] flex items-center justify-center px-6 py-12">
 			<div className="max-w-[1100px] w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
@@ -74,23 +85,14 @@ export default function FreeConsultationClient() {
 								<h2 className="text-2xl font-black mb-6">{t("booking.details")}</h2>
 								<form className="grid gap-6" onSubmit={(e) => e.preventDefault()}>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										{(locale === "ja"
-											? [
-													{ label: t("booking.lastName"), value: formData.lastName, field: "lastName" },
-													{ label: t("booking.firstName"), value: formData.firstName, field: "firstName" },
-												]
-											: [
-													{ label: t("booking.firstName"), value: formData.firstName, field: "firstName" },
-													{ label: t("booking.lastName"), value: formData.lastName, field: "lastName" },
-												]
-										).map((item) => (
-											<Input key={item.field} label={item.label} value={item.value} onChange={(val) => updateField(item.field as any, val)} required />
+										{nameFieldConfig.map((item) => (
+											<Input key={item.field} label={item.label} value={formData[item.field]} onChange={(val) => updateField(item.field, val)} required />
 										))}
 									</div>
 
 									<Input label={t("booking.email")} type="email" value={formData.email} onChange={(val) => updateField("email", val)} required />
 
-									<textarea rows={4} placeholder={t("booking.messagePlaceholder")} value={formData.message} onChange={(e) => updateField("message", e.target.value)} className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1754cf]/30" />
+									<textarea rows={4} placeholder={t("booking.messagePlaceholder")} value={formData.message} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => updateField("message", e.target.value)} className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1754cf]/30" />
 								</form>
 							</div>
 

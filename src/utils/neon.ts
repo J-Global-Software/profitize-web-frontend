@@ -1,13 +1,19 @@
-import { neon } from "@neondatabase/serverless";
+import { Pool, QueryResultRow } from "@neondatabase/serverless";
 
-// Create the connection pooler instance
-const sql = neon(process.env.DATABASE_URL!);
+// 1. Initialize the Pool (Singleton)
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-export async function query<T extends Record<string, any> = any>(text: string, params?: any[]) {
-	// ✅ Use .query() for manual text + array parameters
-	// This avoids the 'Object literal' / 'timezone' error
-	const rows = await sql.query(text, params || []);
+/**
+ * Executes a SQL query with full type safety.
+ * @template T - The expected shape of the database row, extending QueryResultRow.
+ */
+export async function query<T extends QueryResultRow = QueryResultRow>(text: string, params: unknown[] = []): Promise<{ rows: T[]; rowCount: number | null }> {
+	// 2. Execute the query using the Pool's native text/params support
+	const result = await pool.query<T>(text, params);
 
-	// Return in the format your app expects
-	return { rows: rows as T[] };
+	// 3. Return the typed rows and the count of affected rows
+	return {
+		rows: result.rows,
+		rowCount: result.rowCount,
+	};
 }

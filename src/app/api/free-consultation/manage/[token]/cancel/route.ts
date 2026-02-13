@@ -26,13 +26,12 @@ export async function GET(req: NextRequest, context: { params: Promise<{ token: 
 			return NextResponse.json({ error: "Invalid or missing token" }, { status: 400 });
 		}
 
-		const data = await BookingService.getBookingManagementData(token);
+		const data = await BookingService.cancelBooking(token);
 
 		if (!data) {
 			return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 		}
 
-		// Create response
 		const res = NextResponse.json(data, { status: 200 });
 
 		// IMPORTANT: Prevent caching of sensitive management data
@@ -40,9 +39,12 @@ export async function GET(req: NextRequest, context: { params: Promise<{ token: 
 		res.headers.set("Pragma", "no-cache");
 
 		return res;
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error("[GET Booking Error]", err);
-		const status = getErrorStatus(err.message);
-		return NextResponse.json({ error: err.message || "Internal Server Error" }, { status });
+
+		const message = err instanceof Error ? err.message : "Internal Server Error";
+		const status = getErrorStatus(message);
+
+		return NextResponse.json({ error: message }, { status });
 	}
 }

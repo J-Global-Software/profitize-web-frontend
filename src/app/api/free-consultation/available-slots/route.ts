@@ -10,6 +10,12 @@ const limiter = new Ratelimit({
 	limiter: Ratelimit.slidingWindow(30, "1m"),
 });
 
+// Interface for the expected request body
+interface SlotRequest {
+	date?: string;
+	timezone?: string;
+}
+
 export async function POST(req: NextRequest) {
 	const ip = req.headers.get("x-forwarded-for") || "unknown";
 
@@ -26,14 +32,15 @@ export async function POST(req: NextRequest) {
 			return Response.json({ error: "Empty request body" }, { status: 400 });
 		}
 
-		const { date, timezone } = JSON.parse(rawBody);
+		const body: SlotRequest = JSON.parse(rawBody);
+		const { date, timezone } = body;
 
 		if (!date) {
 			return Response.json({ error: "Date is required" }, { status: 400 });
 		}
 
 		// 3. Execution
-		// Note: Providing the default here ensures the Service always has a string to work with
+		// Providing the default here ensures the Service always has a string to work with
 		const availableSlots = await BookingService.getAvailableSlots(date, timezone || "Asia/Tokyo");
 
 		return Response.json(
@@ -43,12 +50,12 @@ export async function POST(req: NextRequest) {
 			},
 			{ status: 200 },
 		);
-	} catch (err: any) {
-		console.error("[Slots API Error]:", err.message);
+	} catch (err: unknown) {
+		const message = err instanceof Error ? err.message : "Internal Server Error";
+		console.error("[Slots API Error]:", message);
 
-		// Returns 400, 401, 404, etc. based on error message, or defaults to 500
-		const status = getErrorStatus(err.message);
+		const status = getErrorStatus(message);
 
-		return Response.json({ error: err.message || "Internal Server Error" }, { status });
+		return Response.json({ error: message }, { status });
 	}
 }

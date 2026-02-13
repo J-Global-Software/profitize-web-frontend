@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { format, startOfDay } from "date-fns";
 import { ja, enUS } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
-import { TimeSlot } from "@/src/types/booking";
+import { TimeSlot } from "@/src/types/bookingFrontend";
 
 interface BookingCalendarProps {
 	selectedDate: Date | null;
@@ -95,12 +95,14 @@ export default function BookingCalendar({ selectedDate, onDateSelect, selectedSl
 				if (!abortController.signal.aborted) {
 					setAvailableSlots(data.availableSlots || []);
 				}
-			} catch (err: any) {
-				if (err.name !== "AbortError") {
+			} catch (err: unknown) {
+				if (err instanceof Error && err.name !== "AbortError") {
 					setSlotsError(t("errors.fetchSlotsFailed") || "Failed to load time slots");
 				}
 			} finally {
-				if (!abortController.signal.aborted) setLoadingSlots(false);
+				if (!abortController.signal.aborted) {
+					setLoadingSlots(false);
+				}
 			}
 		};
 

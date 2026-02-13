@@ -27,7 +27,7 @@ export function convertJSTToUserTimezone(
 	const jstISOString = `${jstDateStr}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00+09:00`;
 	const date = new Date(jstISOString);
 
-	// ✅ FIXED: Format directly without intermediate conversion
+	// FIXED: Format directly without intermediate conversion
 	const displayTime = date.toLocaleTimeString("en-US", {
 		hour: "2-digit",
 		minute: "2-digit",
@@ -40,21 +40,6 @@ export function convertJSTToUserTimezone(
 	});
 
 	return { displayTime, displayDate };
-}
-
-/**
- * Convert user's local time back to JST
- */
-export function convertUserTimezoneToJST(
-	userDateStr: string,
-	userTime: string,
-	userTimezone: string,
-): {
-	jstDate: string;
-	jstTime: string;
-} {
-	// Not used yet, placeholder for booking functionality
-	return { jstDate: userDateStr, jstTime: userTime };
 }
 
 export function hashCode(str: string): number {

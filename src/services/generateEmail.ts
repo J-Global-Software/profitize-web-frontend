@@ -221,7 +221,7 @@ export function generateLecturerNotificationHTML(data: EmailData, messages: Serv
 
 export function generateICS({ start, end, title, description, location }: { start: Date; end: Date; title: string; description: string; location: string }): string {
 	const formatICSDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
-	return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//J Global Biz School//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(start)}`, `DTEND:${formatICSDate(end)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+	return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Profitize//Consultation Session//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT", `UID:${crypto.randomUUID()}@profitize.jp`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART:${formatICSDate(start)}`, `DTEND:${formatICSDate(end)}`, `SUMMARY:${title}`, `DESCRIPTION:${description}`, `LOCATION:${location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
 }
 
 function generateGoogleCalendarUrl(date: string, time: string): string {

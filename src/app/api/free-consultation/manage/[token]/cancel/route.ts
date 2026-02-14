@@ -25,8 +25,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ token: 
 		if (!token || !uuidRegex.test(token)) {
 			return NextResponse.json({ error: "Invalid or missing token" }, { status: 400 });
 		}
-
-		const data = await BookingService.cancelBooking(token);
+		const locale = req.headers.get("x-locale") || "ja";
+		const data = await BookingService.cancelBooking(token, locale);
 
 		if (!data) {
 			return NextResponse.json({ error: "Booking not found" }, { status: 404 });

@@ -36,14 +36,9 @@ interface TargetRowProps {
 
 export default function ProfitizeApproachSection() {
 	const t = useTranslations("homepage.ProfitizeApproachSection");
-	const locale = useLocale();
-
-	// Text content - Ideally move these to your messages/en.json and messages/ja.json
-	const descriptionEn = "This is an example of helping some departments in a division of a Japanese company to collaborate in cost cutting, risk mitigation and process optimization via our in-house workshops and project facilitation. Many of the biggest pain points and profit increase opportunities are in the gaps between departments, reducing delays, rework and waste.";
-	const descriptionJa = "これは、当社が実施する社内ワークショップとプロジェクトファシリテーションを通じて、日本企業の事業部門内における各部署間の連携を促進し、コスト削減・リスク軽減・プロセス最適化を実現した事例です。最大の課題点や利益向上の機会は、多くの場合部署間の連携不足に起因しており、遅延・手戻り・無駄の削減が鍵となります。";
 
 	return (
-		<section className="relative py-32 bg-[#fafbff] overflow-hidden" id="approach">
+		<section className="relative py-16 bg-[#fafbff] overflow-hidden" id="approach">
 			{/* Background Decoration */}
 			<div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
 				<div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-gradient-to-br from-blue-200/40 to-indigo-200/20 blur-[100px] animate-pulse" />
@@ -54,13 +49,13 @@ export default function ProfitizeApproachSection() {
 			<div className="max-w-7xl mx-auto px-6">
 				{/* Header */}
 				<div className="max-w-3xl mx-auto mb-16 text-center">
-					<h2 className="text-5xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
+					<h2 className="text-3xl md:text-5xl  font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
 						{t("title.part1")}&nbsp;
 						<span className="text-blue-600">{t("title.part2")}</span>
 					</h2>
 
 					{/* New Description Section */}
-					<p className="text-lg text-slate-600 leading-relaxed font-medium">{locale === "ja" ? descriptionJa : descriptionEn}</p>
+					<p className="text-lg text-slate-600 leading-relaxed font-medium">{t("description")}</p>
 				</div>
 
 				{/* 3 Column Layout */}

@@ -63,7 +63,7 @@ export default function Industries() {
 
 			<div className="max-w-[1120px] mx-auto px-6">
 				<motion.div className="flex flex-col items-center text-center mb-10 sm:mb-14" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-					<h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-4">{t("industries.header.title")}</h2>
+					<h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 mb-4">{t("industries.header.title")}</h2>
 					<p className="text-slate-500 text-sm sm:text-base font-medium leading-relaxed max-w-[650px]">{t("industries.header.description")}</p>
 				</motion.div>
 

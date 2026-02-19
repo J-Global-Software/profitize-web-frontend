@@ -4,17 +4,23 @@ import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
+import { IconType } from "react-icons";
 
 // Import React Icons
 import { HiOutlineMagnifyingGlass, HiOutlineLightBulb, HiOutlineRocketLaunch, HiOutlineSparkles, HiOutlineChartBar, HiOutlineUsers, HiOutlineDocumentMagnifyingGlass } from "react-icons/hi2";
 
-const ICONS = [HiOutlineMagnifyingGlass, HiOutlineLightBulb, HiOutlineRocketLaunch, HiOutlineSparkles, HiOutlineChartBar, HiOutlineUsers, HiOutlineDocumentMagnifyingGlass];
+const ICONS: IconType[] = [HiOutlineMagnifyingGlass, HiOutlineLightBulb, HiOutlineRocketLaunch, HiOutlineSparkles, HiOutlineChartBar, HiOutlineUsers, HiOutlineDocumentMagnifyingGlass];
+
+interface Step {
+	title: string;
+	text: string;
+}
 
 export default function MethodologySection() {
 	const t = useTranslations("homepage");
 	const [step, setStep] = useState(0);
 
-	const steps = [
+	const steps: Step[] = [
 		{ title: t("methodology.steps.step01_title"), text: t("methodology.steps.step01_text") },
 		{ title: t("methodology.steps.step02_title"), text: t("methodology.steps.step02_text") },
 		{ title: t("methodology.steps.step03_title"), text: t("methodology.steps.step03_text") },
@@ -30,97 +36,95 @@ export default function MethodologySection() {
 	const imageSrc = `/images/${String(step + 1).padStart(2, "0")}.jpg`;
 
 	return (
-		<section id="methodology" className="pt-24 pb-10 bg-[#f7f7ff]">
-			{/* Header */}
-			<motion.div className="max-w-[1100px] mx-auto px-6 text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
-				<h2 className="text-4xl md:text-5xl font-black text-[#0e121b]">{t("methodology.header.title")}</h2>
-				<p className="mt-3 text-lg max-w-3xl mx-auto text-[#4e6797]">{t("methodology.header.description")}</p>
+		<section id="methodology" className="relative py-10 bg-[#fafbff] overflow-hidden">
+			{/* Background decorative elements */}
+			<div className="absolute top-0 right-0 w-1/2 h-1/2 bg-indigo-50/50 blur-[120px] -z-10" />
+			<div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-blue-50/50 blur-[100px] -z-10" />
+
+			{/* Header - Reduced mb-16 to mb-8 */}
+			<motion.div className="max-w-[1100px] mx-auto px-6 text-center mb-8" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+				<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">{t("methodology.header.title")}</h2>
+				<p className="mt-2 text-lg max-w-2xl mx-auto text-slate-500 font-medium">{t("methodology.header.description")}</p>
 			</motion.div>
 
-			{/* Card */}
-			<motion.div className="max-w-[1200px] mx-auto px-6" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}>
-				<div className="bg-white rounded-3xl shadow-lg overflow-hidden flex flex-col lg:flex-row min-h-[400px]">
-					{/* Sidebar */}
-					<aside className="hidden lg:block w-[300px] pt-5 border-r border-[#e5e7eb] bg-[rgba(249,250,251,0.6)]">
-						<nav className="p-2 flex flex-col gap-2">
+			{/* Main Interactive Stage - Reduced min-h-[550px] to min-h-[450px] */}
+			<motion.div className="max-w-[1240px] mx-auto px-6" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}>
+				<div className="relative bg-white/40 backdrop-blur-2xl rounded-[3rem] border border-white shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[450px]">
+					{/* Sidebar: Glass Acrylic */}
+					<aside className="hidden lg:block w-[300px] pt-6 border-r border-white/60 bg-white/20">
+						<div className="px-6 mb-4">
+							<p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Workflow Index</p>
+						</div>
+						<nav className="px-3 flex flex-col gap-1">
 							{steps.map((stepItem, i) => {
 								const active = i === step;
 								const Icon = ICONS[i];
 
 								return (
-									<motion.button
+									<button
 										key={i}
 										onClick={() => setStep(i)}
-										initial={{ opacity: 0, x: -12 }}
-										whileInView={{ opacity: 1, x: 0 }}
-										viewport={{ once: true, amount: 0.3 }}
-										transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
-										animate={active ? { backgroundColor: "#1754cf", color: "#ffffff" } : { backgroundColor: "transparent", color: "#6b7280" }}
 										className={`
-                                            group flex items-center gap-3 px-4 py-2 rounded-xl text-md
-                                            transition-transform duration-300
-                                            ${active ? "font-bold shadow-lg shadow-[#1754cf]/25" : "hover:bg-white hover:translate-x-1 hover:shadow-sm"}
+                                            group flex items-center gap-4 px-5 py-2.5 rounded-2xl text-sm transition-all duration-300
+                                            ${active ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20 translate-x-2" : "text-slate-500 hover:bg-white/60 hover:text-slate-900"}
                                         `}
 									>
-										<Icon className="text-lg flex-shrink-0" />
-										<span className="text-left">
-											{String(i + 1).padStart(2, "0")}. {stepItem.title}
+										<Icon className={`text-lg transition-transform ${active ? "scale-110" : "group-hover:rotate-12"}`} />
+										<span className="text-left font-bold tracking-tight">
+											{i + 1}.{" " + stepItem.title}
 										</span>
-									</motion.button>
+									</button>
 								);
 							})}
 						</nav>
 					</aside>
 
-					{/* Content */}
-					<div className="flex-1 relative bg-white p-8 overflow-hidden">
-						{/* Mobile carousel controls */}
+					{/* Content Area - Reduced p-16 to p-12 */}
+					<div className="flex-1 relative p-8 lg:p-12 flex flex-col justify-between">
+						{/* Mobile controls */}
 						<div className="flex lg:hidden items-center justify-between mb-6">
-							<button onClick={prevStep} disabled={step === 0} className="px-4 py-2 rounded-full text-sm font-bold bg-[#f1f5f9] text-[#0e121b] disabled:opacity-40">
-								← Back
+							<button onClick={prevStep} disabled={step === 0} className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-200 disabled:opacity-30">
+								←
 							</button>
-							<span className="text-xs font-bold text-[#6b7280]">
-								Step {step + 1} / {steps.length}
-							</span>
-							<button onClick={nextStep} disabled={step === steps.length - 1} className="px-4 py-2 rounded-full text-sm font-bold bg-[#1754cf] text-white disabled:opacity-40">
-								Next →
+							<div className="text-center">
+								<p className="text-[10px] font-black text-slate-400 uppercase">Step</p>
+								<p className="text-sm font-bold text-slate-900">
+									{step + 1} / {steps.length}
+								</p>
+							</div>
+							<button onClick={nextStep} disabled={step === steps.length - 1} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-900 text-white disabled:opacity-30">
+								→
 							</button>
 						</div>
 
 						<AnimatePresence mode="wait">
-							<motion.div key={step} className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35, ease: "easeOut" }}>
-								<div className="max-w-xl">
-									<div className="inline-flex items-center gap-2 bg-[#1754cf]/10 text-[#1754cf] px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">
-										{t("methodology.steps.labels.step")} {step + 1}
-									</div>
-									<h3 className="text-4xl font-bold text-[#0e121b] mb-4">{steps[step].title}</h3>
-									<p className="text-lg font-medium text-[#4e6797]">{steps[step].text}</p>
+							<motion.div key={step} className="flex-grow flex flex-col lg:flex-row gap-8 items-center lg:items-center" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+								<div className="flex-1 text-center lg:text-left">
+									<h3 className="text-2xl lg:text-4xl font-black text-slate-900 mb-3 tracking-tight">{steps[step].title}</h3>
+									<p className="text-base lg:text-lg text-slate-500 leading-relaxed font-medium max-w-xl">{steps[step].text}</p>
 								</div>
 
-								<div className="relative w-full h-[130px] lg:h-[200px] overflow-hidden">
-									<Image src={imageSrc} alt={steps[step].title} fill sizes="(max-width: 1024px) 100vw, 50vw" priority className="object-contain" />
+								<div className="relative w-1/2 lg:w-1/4 aspect-square rounded-3xl overflow-hidden shadow-inner">
+									<Image src={imageSrc} alt={steps[step].title} fill className="object-cover" priority />
 								</div>
 							</motion.div>
 						</AnimatePresence>
 
-						{/* Footer Indicators */}
-						<div className="mt-10 pt-6 border-t border-[#e5e7eb] flex items-center justify-between relative z-10">
-							<div className="flex gap-1">
+						{/* Footer Navigation - Reduced mt-12 pt-8 to mt-6 pt-4 */}
+						<div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+							<div className="flex gap-1.5">
 								{steps.map((_, i) => (
-									<motion.div
-										key={i}
-										className="h-1 rounded-full bg-[#e5e7eb]"
-										animate={{
-											backgroundColor: i === step ? "#1754cf" : "#e5e7eb",
-											width: i === step ? "1.25rem" : "1rem",
-										}}
-										transition={{ duration: 0.3, ease: "easeOut" }}
-									/>
+									<div key={i} onClick={() => setStep(i)} className={`h-1.5 rounded-full cursor-pointer transition-all duration-500 ${i === step ? "w-8 bg-slate-900" : "w-3 bg-slate-200 hover:bg-slate-300"}`} />
 								))}
 							</div>
-							<span className="text-[10px] font-bold text-[#9ca3af]">
-								{step + 1} / {steps.length}
-							</span>
+							<div className="flex gap-3">
+								<button onClick={prevStep} disabled={step === 0} className="hidden lg:flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-colors">
+									Previous
+								</button>
+								<button onClick={nextStep} disabled={step === steps.length - 1} className="hidden lg:flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-900 hover:text-blue-600 disabled:opacity-20 transition-colors">
+									Next Step →
+								</button>
+							</div>
 						</div>
 					</div>
 				</div>

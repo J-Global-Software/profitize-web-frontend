@@ -126,34 +126,34 @@
         "header": "Free introductory Workshops",
         "workshops": {
             "w1": {
-                "date": "24",
-                "month": "Feb",
+                "date": "17",
+                "month": "Mar",
                 "title": "English/Bilingual",
-                "detail": "Zoom • 8pm-9:30pm",
+                "detail": "Zoom • 10am-11:am",
                 "cta": "Reserve Spot",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w2": {
-                "date": "26",
-                "month": "Feb",
+                "date": "19",
+                "month": "Mar",
                 "title": "Japanese",
-                "detail": "Zoom • 7:30pm-9pm",
+                "detail": "Zoom • 3:00pm-4:30pm",
                 "cta": "Reserve Spot",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w3": {
-                "date": "3",
+                "date": "18",
                 "month": "Mar",
                 "title": "English/Bilingual",
-                "detail": "Zoom • 3pm-4pm",
+                "detail": "Zoom • 3:00pm-4:30pm",
                 "cta": "Reserve Spot",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w4": {
-                "date": "6",
+                "date": "24",
                 "month": "Mar",
                 "title": "Japanese",
-                "detail": "Zoom • 3pm-4pm",
+                "detail": "Zoom • 8:00pm-9:30pm",
                 "cta": "Reserve Spot",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             }
@@ -198,6 +198,52 @@
         "toast": {
             "success": "Success: Message submitted successfully.",
             "error": "Error: Unable to submit message."
+        }
+    },
+    "ProfitizeApproachSection": {
+        "title": {
+            "part1": "Profitize",
+            "part2": "Approach"
+        },
+        "steps": {
+            "plan": {
+                "step": "01",
+                "title": "Plan",
+                "subtitle": "Strategic Framework",
+                "pillars": {
+                    "costCutting": "Cost cutting",
+                    "riskReduction": "Risk reduction",
+                    "processOptimization": "Process optimization",
+                    "profitableDevelopment": "Profitable business development"
+                }
+            },
+            "trackSupport": {
+                "step": "02",
+                "title": "Track & Support",
+                "subtitle": "Month 1",
+                "status": {
+                    "label": "Status",
+                    "value": "On Track"
+                },
+                "metrics": {
+                    "costCutting": "Cost cutting",
+                    "riskReduction": "Risk reduction",
+                    "processOptimization": "Process optimization",
+                    "profitableDevelopment": "Profitable business development"
+                }
+            },
+            "achieveProfit": {
+                "step": "03",
+                "title": "Achieve Profit",
+                "subtitle": "Annual Target",
+                "targets": {
+                    "costCutting": "Cost cutting",
+                    "riskReduction": "Risk reduction",
+                    "processOptimization": "Process optimization",
+                    "profitableDevelopment": "Profitable business development"
+                },
+                "projectedTotalLabel": "Projected Total"
+            }
         }
     }
 }

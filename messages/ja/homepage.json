@@ -126,34 +126,34 @@
         "header": "無料入門ワークショップ",
         "workshops": {
             "w1": {
-                "date": "24日",
-                "month": "2月",
+                "date": "17日",
+                "month": "3月",
                 "title": "英語・バイリンガル",
-                "detail": "Zoom • 20:00-21:30",
+                "detail": "Zoom • 10:00-11:30",
                 "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w2": {
-                "date": "26日",
-                "month": "2月",
+                "date": "19日",
+                "month": "3月",
                 "title": "日本語",
-                "detail": "Zoom • 19:30-21:00",
+                "detail": "Zoom • 3:00pm-4:30pm",
                 "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w3": {
-                "date": "3日",
+                "date": "18日",
                 "month": "3月",
                 "title": "英語・バイリンガル",
-                "detail": "Zoom • 15:00-16:00",
+                "detail": "Zoom • 3:00pm-4:30pm",
                 "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             },
             "w4": {
-                "date": "6日",
+                "date": "24日",
                 "month": "3月",
                 "title": "日本語",
-                "detail": "Zoom • 15:00-16:00",
+                "detail": "Zoom • 8:00pm-9:30pm",
                 "cta": "席を予約する",
                 "link": "https://us02web.zoom.us/j/81458426579?pwd=bczVnwoMNfnA4eo2Rzp7qqaaUsrzXf.1"
             }
@@ -198,6 +198,52 @@
         "toast": {
             "success": "送信が完了しました。",
             "error": "送信に失敗しました。"
+        }
+    },
+    "ProfitizeApproachSection": {
+        "title": {
+            "part1": "Profitize",
+            "part2": "アプローチ"
+        },
+        "steps": {
+            "plan": {
+                "step": "01",
+                "title": "計画",
+                "subtitle": "戦略フレームワーク",
+                "pillars": {
+                    "costCutting": "コスト削減",
+                    "riskReduction": "リスク軽減",
+                    "processOptimization": "業務プロセス最適化",
+                    "profitableDevelopment": "収益性の高い事業開発"
+                }
+            },
+            "trackSupport": {
+                "step": "02",
+                "title": "進捗管理・サポート",
+                "subtitle": "1ヶ月目",
+                "status": {
+                    "label": "進捗状況",
+                    "value": "順調"
+                },
+                "metrics": {
+                    "costCutting": "コスト削減",
+                    "riskReduction": "リスク軽減",
+                    "processOptimization": "業務プロセス最適化",
+                    "profitableDevelopment": "収益性の高い事業開発"
+                }
+            },
+            "achieveProfit": {
+                "step": "03",
+                "title": "利益の実現",
+                "subtitle": "年間目標",
+                "targets": {
+                    "costCutting": "コスト削減",
+                    "riskReduction": "リスク軽減",
+                    "processOptimization": "業務プロセス最適化",
+                    "profitableDevelopment": "収益性の高い事業開発"
+                },
+                "projectedTotalLabel": "予測合計"
+            }
         }
     }
 }

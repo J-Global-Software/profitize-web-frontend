@@ -1,26 +1,31 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useState, useEffect } from "react";
-import { HiOutlineSpeakerphone, HiOutlineAcademicCap, HiOutlineCurrencyDollar, HiOutlineTerminal, HiOutlineBeaker } from "react-icons/hi";
-import { MdOutlineDirectionsCar, MdOutlineMovie, MdOutlineHotel, MdOutlinePrecisionManufacturing } from "react-icons/md";
+import { IconType } from "react-icons";
+// Consolidated imports to Hi2 for visual consistency with your other sections
+import { HiOutlineMegaphone, HiOutlineAcademicCap, HiOutlineCurrencyDollar, HiOutlineCommandLine, HiOutlineBeaker, HiOutlineTruck, HiOutlineFilm, HiOutlineBuildingOffice2, HiOutlineCpuChip } from "react-icons/hi2";
 
-const INDUSTRIES = [
-	{ key: "advertising", Icon: HiOutlineSpeakerphone },
-	{ key: "automobile", Icon: MdOutlineDirectionsCar },
+interface IndustryItem {
+	key: string;
+	Icon: IconType;
+}
+
+const INDUSTRIES: IndustryItem[] = [
+	{ key: "advertising", Icon: HiOutlineMegaphone },
+	{ key: "automobile", Icon: HiOutlineTruck },
 	{ key: "education", Icon: HiOutlineAcademicCap },
-	{ key: "entertainment", Icon: MdOutlineMovie },
+	{ key: "entertainment", Icon: HiOutlineFilm },
 	{ key: "finance", Icon: HiOutlineCurrencyDollar },
-	{ key: "hospitality", Icon: MdOutlineHotel },
-	{ key: "itTechnology", Icon: HiOutlineTerminal },
+	{ key: "hospitality", Icon: HiOutlineBuildingOffice2 },
+	{ key: "itTechnology", Icon: HiOutlineCommandLine },
 	{ key: "lifeScience", Icon: HiOutlineBeaker },
-	{ key: "manufacturing", Icon: MdOutlinePrecisionManufacturing },
+	{ key: "manufacturing", Icon: HiOutlineCpuChip },
 ];
 
 export default function Industries() {
 	const t = useTranslations("homepage");
-
 	const [isMobile, setIsMobile] = useState(false);
 
 	useEffect(() => {
@@ -30,32 +35,45 @@ export default function Industries() {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	const containerVariants = {
-		hidden: {},
+	const containerVariants: Variants = {
+		hidden: { opacity: 0 },
 		visible: {
+			opacity: 1,
 			transition: {
-				staggerChildren: isMobile ? 0 : 0.07,
-				delayChildren: isMobile ? 0 : 0.15,
+				staggerChildren: isMobile ? 0.03 : 0.08,
+				delayChildren: 0.1,
 			},
 		},
 	};
 
-	return (
-		<section id="industries" className="bg-[#f7f7ff] py-8 sm:py-12">
-			<div className="max-w-[1120px] mx-auto px-4 sm:px-6">
-				<motion.div className="flex flex-col items-center text-center mb-12 sm:mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: "easeOut" }}>
-					<h2 className="text-3xl sm:text-[42px] font-black leading-tight tracking-[-0.03em] mb-4 sm:mb-6 text-[#0e121b]">{t("industries.header.title")}</h2>
+	const itemVariants: Variants = {
+		hidden: { opacity: 0, scale: 0.9, y: 10 },
+		visible: {
+			opacity: 1,
+			scale: 1,
+			y: 0,
+			transition: { type: "spring", stiffness: 260, damping: 20 },
+		},
+	};
 
-					<p className="text-[#5b6871] text-base sm:text-lg leading-relaxed max-w-[800px]">{t("industries.header.description")}</p>
+	return (
+		<section id="industries" className="relative bg-[#fafbff] py-16  overflow-hidden">
+			{/* Subtle glass background glow */}
+			<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-blue-50/50 blur-[120px] -z-10" />
+
+			<div className="max-w-[1120px] mx-auto px-6">
+				<motion.div className="flex flex-col items-center text-center mb-10 sm:mb-14" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+					<h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-4">{t("industries.header.title")}</h2>
+					<p className="text-slate-500 text-sm sm:text-base font-medium leading-relaxed max-w-[650px]">{t("industries.header.description")}</p>
 				</motion.div>
 
-				<motion.div className="flex flex-wrap justify-center gap-3 sm:gap-4" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={containerVariants}>
+				<motion.div className="flex flex-wrap justify-center gap-2.5 sm:gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
 					{INDUSTRIES.map(({ key, Icon }) => (
-						<motion.div key={key} layout className="group flex items-center gap-2 sm:gap-3 px-5 py-3 sm:px-8 sm:py-5 rounded-full bg-white border border-[#e7ebf3] cursor-pointer transition-all duration-300 hover:-translate-y-[2px] hover:bg-[#f0f4ff] hover:border-[#1754cf] hover:shadow-[0_4px_12px_rgba(23,84,207,0.08)]">
-							{/* Icon Component replacing the span */}
-							<Icon className="text-[#1754cf] text-[20px] sm:text-[24px] transition-transform group-hover:scale-110" />
-
-							<span className="text-sm sm:text-md font-semibold tracking-tight text-[#0e121b] whitespace-nowrap">{t(`industries.list.${key}`)}</span>
+						<motion.div key={key} variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="group flex items-center gap-3 px-5 py-3 sm:px-7 sm:py-4 rounded-full bg-white/60 backdrop-blur-md border border-white shadow-sm hover:shadow-md hover:bg-white hover:border-blue-100 transition-all cursor-default">
+							<div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+								<Icon className="text-lg sm:text-xl" />
+							</div>
+							<span className="text-sm sm:text-base font-bold tracking-tight text-slate-800 whitespace-nowrap">{t(`industries.list.${key}`)}</span>
 						</motion.div>
 					))}
 				</motion.div>

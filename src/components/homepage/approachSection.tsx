@@ -1,125 +1,166 @@
 import React from "react";
-import { HiOutlineArrowLongRight, HiOutlineChartBarSquare } from "react-icons/hi2";
+import { HiOutlineChartBarSquare, HiOutlineArrowTrendingUp, HiOutlineShieldCheck, HiOutlineBolt, HiOutlineRocketLaunch, HiOutlineArrowUpRight } from "react-icons/hi2";
 
+/**
+ * Types & Interfaces
+ */
+interface MethodCardProps {
+	step: string;
+	title: string;
+	subtitle: string;
+	children: React.ReactNode;
+	isFeatured?: boolean;
+	accentColor?: "blue" | "indigo" | "emerald" | "orange" | "purple";
+}
+
+interface MiniPillarProps {
+	icon: React.ReactNode;
+	label: string;
+	colorClass: string;
+}
+
+interface StatBarProps {
+	label: string;
+	pct: number;
+	val: string;
+	colorClass: string;
+}
+
+interface TargetRowProps {
+	label: string;
+	amount: string;
+}
+
+/**
+ * Main Section Component
+ */
 export default function ProfitizeApproachSection() {
 	return (
-		<section className="py-20 bg-white" id="approach">
-			<div className="max-w-[1200px] mx-auto px-6">
-				{/* Header Section */}
-				<div className="text-center mb-16">
-					<span className="text-[10px] font-extrabold uppercase tracking-[0.4em] text-[#1754cf]/60 block mb-2">Strategic Framework</span>
-					<h2 className="serif-header text-4xl md:text-5xl font-black text-[#111318]">Profitize Approach</h2>
-					<div className="w-12 h-1 bg-[#1754cf]/20 mx-auto mt-4 rounded-full"></div>
-				</div>
+		<section className="relative py-32 bg-[#fafbff] overflow-hidden" id="approach">
+			<div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+				<div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-gradient-to-br from-blue-200/40 to-indigo-200/20 blur-[100px] animate-pulse" />
+				<div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-emerald-100/40 to-blue-100/30 blur-[100px]" />
+				<div className="absolute top-[20%] right-[10%] w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl" />
+			</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start relative">
-					{/* Column 1: Plan */}
-					<div className="flex flex-col gap-6">
-						<div className="mb-4">
-							<h3 className="serif-header text-3xl font-black text-[#111318]">Plan</h3>
-							<p className="text-sm text-gray-500 mt-4 leading-relaxed">Conducting stakeholder audits to identify high-impact profit potential across four key operational pillars.</p>
+			<div className="max-w-7xl mx-auto px-6">
+				<h2 className="text-5xl mb-15 font-black text-slate-900 tracking-tight leading-[0.9] text-center">
+					Profitize&nbsp;<span className="text-blue-600">アプローチ</span>
+				</h2>
+
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+					{/* Step 1 */}
+					<MethodCard step="01" title="計画" subtitle="戦略フレームワーク" accentColor="blue">
+						<div className="grid grid-cols-1 gap-3 mt-6">
+							<MiniPillar icon={<HiOutlineBolt />} label="コスト削減" colorClass="text-[#3b82f6]" />
+							<MiniPillar icon={<HiOutlineShieldCheck />} label="リスク軽減" colorClass="text-[#e27d60]" />
+							<MiniPillar icon={<HiOutlineArrowTrendingUp />} label="業務プロセス最適化" colorClass="text-[#a34f73]" />
+							<MiniPillar icon={<HiOutlineRocketLaunch />} label="収益性の高い事業開発" colorClass="text-[#3e8e20]" />
 						</div>
-						<div className="space-y-4">
-							<PillarCard color="bg-[#3b82f6]" step="01" title="Cost cutting" />
-							<PillarCard color="bg-[#e27d60]" step="02" title="Risk reduction" />
-							<PillarCard color="bg-[#a34f73]" step="03" title="Process optimization" />
-							<PillarCard color="bg-[#3e8e20]" step="04" title="Profitable business development" />
-						</div>
-					</div>
+					</MethodCard>
 
-					{/* Desktop Arrow 1 */}
-					<div className="hidden lg:flex absolute left-[31%] top-1/2 -translate-y-1/2 z-10">
-						<HiOutlineArrowLongRight className="text-6xl text-[#1754cf]/10 stroke-1" />
-					</div>
-
-					{/* Column 2: Track & Support */}
-					<div className="flex flex-col gap-6 bg-[#f0f4ff]/50 p-8 rounded-[2.5rem] border border-[#1754cf]/5 shadow-inner">
-						<div className="mb-4">
-							<h3 className="serif-header text-3xl font-black text-[#111318]">Track & Support</h3>
-							<p className="text-[10px] font-bold text-[#1754cf] uppercase tracking-widest mt-1">Month 1 Performance</p>
-						</div>
-
-						<div className="space-y-6">
-							<TrackBar label="Cost cutting" value="¥30,000,000" percentage={50} color="bg-[#3b82f6]" />
-							<TrackBar label="Risk reduction" value="¥20,000,000" percentage={70} color="bg-[#e27d60]" />
-							<TrackBar label="Process optimization" value="¥40,000,000" percentage={60} color="bg-[#a34f73]" />
-							<TrackBar label="Business Dev" value="¥10,000,000" percentage={80} color="bg-[#3e8e20]" />
-						</div>
-
-						<div className="mt-4 pt-4 text-center">
-							<div className="inline-block px-6 py-2 bg-[#1754cf] text-white rounded-full shadow-lg shadow-[#1754cf]/20">
-								<span className="text-[10px] font-black tracking-widest uppercase">65% Average on Track</span>
+					{/* Step 2 */}
+					<MethodCard step="02" title="進捗管理・サポート" subtitle="1ヶ月目" accentColor="indigo" isFeatured>
+						<div className="mt-8 space-y-6">
+							<div className="flex justify-between items-center bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100 shadow-sm">
+								<span className="text-xs font-bold text-slate-400">進捗状況</span>
+								<span className="text-xs font-black text-indigo-600 uppercase">65% 順調</span>
 							</div>
+
+							<StatBar label="コスト削減" pct={50} val="¥30,000,000" colorClass="bg-[#3b82f6]" />
+							<StatBar label="リスク軽減" pct={70} val="¥20,000,000" colorClass="bg-[#e27d60]" />
+							<StatBar label="業務プロセス最適化" pct={60} val="¥40,000,000" colorClass="bg-[#a34f73]" />
+							<StatBar label="収益性の高い事業開発" pct={80} val="¥10,000,000" colorClass="bg-[#3e8e20]" />
 						</div>
-					</div>
+					</MethodCard>
 
-					{/* Desktop Arrow 2 */}
-					<div className="hidden lg:flex absolute left-[64%] top-1/2 -translate-y-1/2 z-10">
-						<HiOutlineArrowLongRight className="text-6xl text-[#1754cf]/10 stroke-1" />
-					</div>
-
-					{/* Column 3: Achieve Profit */}
-					<div className="flex flex-col gap-6">
-						<div className="mb-4">
-							<h3 className="serif-header text-3xl font-black text-[#111318]">Achieve Profit</h3>
-							<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Annual Target</p>
-						</div>
-
-						<div className="space-y-3">
-							<TargetRow color="border-[#3b82f6]" amount="¥100,000,000" />
-							<TargetRow color="border-[#e27d60]" amount="¥70,000,000" />
-							<TargetRow color="border-[#a34f73]" amount="¥90,000,000" />
-							<TargetRow color="border-[#3e8e20]" amount="¥50,000,000" />
+					{/* Step 3 */}
+					<MethodCard step="03" title="利益の実現" subtitle="年間目標" accentColor="emerald">
+						<div className="mt-6 divide-y divide-slate-100">
+							<TargetRow label="コスト削減" amount="¥100,000,000" />
+							<TargetRow label="リスク軽減" amount="¥70,000,000" />
+							<TargetRow label="業務プロセス最適化" amount="¥90,000,000" />
+							<TargetRow label="収益性の高い事業開発" amount="¥50,000,000" />
 						</div>
 
-						<div className="mt-4">
-							<div className="bg-[#1754cf] text-white p-8 rounded-[2rem] shadow-2xl shadow-[#1754cf]/30 flex flex-col gap-2 relative overflow-hidden group">
-								<div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-									<HiOutlineChartBarSquare className="text-[120px]" />
+						<div className="mt-auto group relative cursor-pointer pt-6">
+							<div className="absolute inset-0 bg-blue-600 rounded-[2rem] blur-xl opacity-10 group-hover:opacity-20 transition-opacity" />
+							<div className="relative bg-slate-950 p-6 rounded-[2rem] text-white flex justify-between items-center overflow-hidden">
+								<div className="z-10">
+									<p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">予測合計</p>
+									<p className="text-3xl font-black italic">¥310,000,000</p>
 								</div>
-								<p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Total Projected Profit</p>
-								<p className="text-4xl font-black">¥310,000,000</p>
+								<HiOutlineChartBarSquare className="absolute -right-2 -bottom-2 text-7xl text-white/5 group-hover:scale-110 transition-transform duration-500" />
 							</div>
 						</div>
-					</div>
+					</MethodCard>
 				</div>
 			</div>
 		</section>
 	);
 }
 
-/** * Sub-Components
+/**
+ * UI Components (UNCHANGED)
  */
 
-function PillarCard({ step, title, color }: { step: string; title: string; color: string }) {
+function MethodCard({ step, title, subtitle, children, isFeatured = false, accentColor = "blue" }: MethodCardProps) {
+	const accentTextColors = {
+		blue: "text-blue-600",
+		indigo: "text-indigo-600",
+		emerald: "text-emerald-600",
+		orange: "text-orange-600",
+		purple: "text-purple-600",
+	};
+
 	return (
-		<div className={`${color} p-5 text-white rounded-2xl shadow-sm transition-transform hover:scale-[1.02] cursor-default`}>
-			<span className="text-[9px] font-black uppercase tracking-widest mb-1 block opacity-80">Pillar {step}</span>
-			<h4 className="font-bold text-lg leading-tight">{title}</h4>
+		<div
+			className={`
+        relative flex flex-col h-full p-8 md:p-10 rounded-[3.5rem] transition-all duration-700
+        ${isFeatured ? "bg-white/90 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-2 border-indigo-50 z-10 lg:scale-105" : "bg-white/40 border border-white/60 hover:bg-white/60 shadow-xl"}
+        backdrop-blur-2xl hover:-translate-y-4
+      `}
+		>
+			<span className="absolute top-6 right-10 text-8xl font-black text-slate-900/[0.03] select-none">{step}</span>
+
+			<div className="mb-8 relative z-10">
+				<p className={`text-[11px] font-black uppercase tracking-[0.2em] mb-2 ${accentTextColors[accentColor]}`}>{subtitle}</p>
+				<h3 className="text-3xl font-bold text-slate-900 tracking-tight">{title}</h3>
+			</div>
+
+			<div className="relative z-10 flex-grow">{children}</div>
 		</div>
 	);
 }
 
-function TrackBar({ label, value, percentage, color }: { label: string; value: string; percentage: number; color: string }) {
+function MiniPillar({ icon, label, colorClass }: MiniPillarProps) {
 	return (
-		<div>
-			<div className="flex justify-between items-center mb-2">
-				<span className="text-[11px] font-bold uppercase tracking-tight text-[#111318]">{label}</span>
-				<span className="text-[11px] font-black text-[#111318]">{value}</span>
-			</div>
-			<div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-				<div className={`${color} h-full rounded-full`} style={{ width: `${percentage}%` }}></div>
-			</div>
-			<p className="text-[8px] font-bold mt-1 text-right text-gray-400 uppercase tracking-widest">{percentage}% On Track</p>
+		<div className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm border border-slate-50 hover:border-blue-200 transition-all group">
+			<div className={`text-xl ${colorClass} group-hover:scale-110 transition-transform`}>{icon}</div>
+			<span className="text-sm font-bold text-slate-700">{label}</span>
 		</div>
 	);
 }
 
-function TargetRow({ color, amount }: { color: string; amount: string }) {
+function StatBar({ label, pct, val, colorClass }: StatBarProps) {
 	return (
-		<div className={`flex justify-between items-center p-4 bg-white rounded-2xl border-l-4 ${color} shadow-sm border border-gray-100/50`}>
-			<span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Target</span>
-			<span className="text-md font-black text-[#111318]">{amount}</span>
+		<div className="group">
+			<div className="flex justify-between mb-2">
+				<span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{label}</span>
+				<span className="text-xs font-black text-slate-900">{val}</span>
+			</div>
+			<div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-[2px]">
+				<div className={`${colorClass} h-full rounded-full transition-all duration-1000 ease-in-out`} style={{ width: `${pct}%` }} />
+			</div>
+		</div>
+	);
+}
+
+function TargetRow({ label, amount }: TargetRowProps) {
+	return (
+		<div className="flex justify-between items-center py-4 group">
+			<span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-slate-900 transition-colors">{label}</span>
+			<span className="text-sm font-black text-slate-900">{amount}</span>
 		</div>
 	);
 }

@@ -8,6 +8,7 @@ import Resources from "../../components/homepage/resourcesSection";
 import ClientLogos from "../../components/homepage/clientLogosSection";
 import { AppLocale } from "@/src/i18n/config";
 import { constructMetadata } from "@/src/utils/metadata";
+import ProfitizeApproachSection from "@/src/components/homepage/approachSection";
 
 type Props = { params: Promise<{ locale: AppLocale }> };
 
@@ -34,8 +35,8 @@ export default function GlobalConsulting() {
 				<Methodology />
 				{/* Industries */}
 				<Industries />
-				{/* approach
-				<ProfitizeApproachSection /> */}
+				{/* approach*/}
+				<ProfitizeApproachSection />
 				{/* Client Logos */}
 				<ClientLogos />
 				{/* Resources */}

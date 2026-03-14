@@ -50,7 +50,7 @@ export default function Footer() {
 									</div>
 								</a>
 
-								{/* Phone */}
+								{/* Phone 
 								<a href={`tel:03-3281-4303`} className="group flex items-center gap-4">
 									<div
 										className="size-12 bg-gray-100 rounded-full flex items-center justify-center
@@ -64,6 +64,7 @@ export default function Footer() {
 										<p className="font-semibold text-gray-900 group-hover:text-[#1754cf] transition-colors">03-3281-4303</p>
 									</div>
 								</a>
+								*/}
 							</div>
 						</div>
 					</motion.div>

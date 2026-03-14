@@ -39,8 +39,8 @@ export default function GlobalConsulting() {
 				<ProfitizeApproachSection />
 				{/* Client Logos */}
 				<ClientLogos />
-				{/* Resources */}
-				<Resources />
+				{/* Resources 
+				<Resources />*/}
 			</main>
 
 			{/* Footer */}

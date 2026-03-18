@@ -3,8 +3,8 @@
         "nav": {
             "whoWeHelp": "Who We Help",
             "industries": "Industries",
-            "services": "Services",
-            "resources": "Resources"
+            "pricing": "Pricing",
+            "methodology": "Methodology"
         },
         "cta": {
             "bookConsultation": "Book Consultation"
@@ -246,5 +246,47 @@
             }
         },
         "description": "This is an example of helping some departments in a division of a Japanese company to collaborate in cost cutting, risk mitigation and process optimization via our in-house workshops and project facilitation. Many of the biggest pain points and profit increase opportunities are in the gaps between departments, reducing delays, rework and waste."
+    },
+    "pricing": {
+        "title": "Service",
+        "titleAccent": "Pricing",
+        "subtitle": "Professional solutions tailored to your organization.",
+        "cta": "Request Proposal",
+        "standardServices": [
+            {
+                "title": "Extended Interviews",
+                "price": "¥0.5M - ¥1M",
+                "text": "Wider interviews covering 10-20 people with comprehensive reports"
+            },
+            {
+                "title": "Advanced Surveys",
+                "price": "¥0.5M - ¥1.5M",
+                "text": "Detailed issue identification and profit-building solutions."
+            },
+            {
+                "title": "Process Workshops",
+                "price": "¥0.5M - ¥1.5M",
+                "text": "Multi-department workshops mapping and optimizing key processes."
+            },
+            {
+                "title": "Strategy Development",
+                "price": "¥0.5M - ¥1M",
+                "text": "Basic synergistic action plans and detailed implementation roadmaps."
+            }
+        ],
+        "premiumServices": [
+            {
+                "title": "MBO Facilitation",
+                "price": "¥3M - ¥12M",
+                "text": "6-12 month engagement with tiered service levels: Premium, Regular, or Automated.",
+                "highlight": "Comprehensive"
+            },
+            {
+                "title": "Performance Evaluations",
+                "price": "¥1.5M - ¥3M",
+                "text": "Comprehensive assessments for managers and teams with detailed progress reporting.",
+                "highlight": "High Impact"
+            }
+        ]
     }
 }

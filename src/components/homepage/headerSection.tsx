@@ -23,14 +23,15 @@ const NavLinks = ({ t, onClick }: NavLinksProps) => (
 		<Link href="#who-we-help" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
 			{t("header.nav.whoWeHelp")}
 		</Link>
+		<Link href="#methodology" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
+			{t("header.nav.methodology")}
+		</Link>
 		<Link href="#industries" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
 			{t("header.nav.industries")}
 		</Link>
-		<Link href="#services" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
-			{t("header.nav.services")}
-		</Link>
-		<Link href="#resources" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
-			{t("header.nav.resources")}
+
+		<Link href="#pricing" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
+			{t("header.nav.pricing")}
 		</Link>
 	</>
 );

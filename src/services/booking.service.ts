@@ -63,41 +63,39 @@ export const BookingService = {
 				});
 
 				// 7. Send Emails (Non-blocking)
-				(async () => {
-					try {
-						const messages = await loadServerMessages(locale);
-						const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
+				try {
+					const messages = await loadServerMessages(locale);
+					const managementUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://profitize.jp"}/${locale}/free-consultation/manage/${booking.cancellation_token}`;
 
-						const icsContent = generateICS({
-							start,
-							end,
-							title: zoomTopic,
-							description: "Your free consultation session",
-							location: "Zoom Meeting",
-						});
+					const icsContent = generateICS({
+						start,
+						end,
+						title: zoomTopic,
+						description: "Your free consultation session",
+						location: "Zoom Meeting",
+					});
 
-						await Promise.all([
-							EmailService.sendUserConfirmation({
-								locale,
-								userData: payload,
-								userZoomLink,
-								managementUrl,
-								messages,
-								icsContent,
-								fromEmail: process.env.FROM_EMAIL || "",
-								toEmail: payload.email,
-							}),
-							EmailService.sendLecturerNotification({
-								userData: payload,
-								messages,
-								fromEmail: process.env.FROM_EMAIL || "",
-								toEmail: process.env.LECTURER_EMAIL || "",
-							}),
-						]);
-					} catch (emailError) {
-						console.error("Email Error:", emailError);
-					}
-				})();
+					await Promise.all([
+						EmailService.sendUserConfirmation({
+							locale,
+							userData: payload,
+							userZoomLink,
+							managementUrl,
+							messages,
+							icsContent,
+							fromEmail: process.env.FROM_EMAIL || "",
+							toEmail: payload.email,
+						}),
+						EmailService.sendLecturerNotification({
+							userData: payload,
+							messages,
+							fromEmail: process.env.FROM_EMAIL || "",
+							toEmail: process.env.LECTURER_EMAIL || "",
+						}),
+					]);
+				} catch (emailError) {
+					console.error("Email Error:", emailError);
+				}
 
 				return { booking, sessionId };
 			} finally {

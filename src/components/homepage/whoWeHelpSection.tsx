@@ -22,7 +22,7 @@ export default function WhoWeHelp() {
 	];
 
 	return (
-		<section className="relative overflow-hidden bg-[#fafbff] py-24 md:py-32" id="who-we-help">
+		<section className="relative overflow-hidden bg-white py-24 md:py-32" id="who-we-help">
 			{/* Soft background glow */}
 			<div className="absolute top-1/4 right-0 w-[30%] h-[30%] rounded-full bg-blue-50/50 blur-[120px] -z-10" />
 

@@ -29,10 +29,12 @@ const NavLinks = ({ t, onClick }: NavLinksProps) => (
 		<Link href="#industries" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
 			{t("header.nav.industries")}
 		</Link>
-
+		{/*
 		<Link href="#pricing" onClick={onClick} className="text-gray-900 hover:text-[#1754cf] transition-colors font-medium">
 			{t("header.nav.pricing")}
 		</Link>
+
+		*/}
 	</>
 );
 

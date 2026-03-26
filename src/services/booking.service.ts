@@ -33,24 +33,21 @@ export const BookingService = {
 
 				// 4 & 5. External Events IN PARALLEL
 				const zoomTopic = `(Profitize) Free Consultation X ${payload.firstName} ${payload.lastName}`;
-
-				const [zoomData, gCalEvent] = await Promise.all([
-					createZoomMeeting(zoomTopic, start, 30, [
-						{
-							email: payload.email,
-							firstName: payload.firstName,
-							lastName: payload.lastName,
-						},
-					]),
-					createBookingEvent({
-						summary: zoomTopic,
-						description: `Free consultation with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}`,
-						start,
-						end,
-					}),
+				const zoomData = await createZoomMeeting(zoomTopic, start, 30, [
+					{
+						email: payload.email,
+						firstName: payload.firstName,
+						lastName: payload.lastName,
+					},
 				]);
-
 				const userZoomLink = zoomData.registrantLinks[payload.email];
+
+				const gCalEvent = await createBookingEvent({
+					summary: zoomTopic,
+					description: `Free coaching with ${payload.firstName} ${payload.lastName}\nEmail: ${payload.email}\nPhone: ${payload.phone}\nMessage: ${payload.message}\nZoom Link: ${userZoomLink}`,
+					start,
+					end,
+				});
 
 				// 6. Save to DB
 				const booking = await BookingRepository.createInitial({
@@ -91,6 +88,7 @@ export const BookingService = {
 							messages,
 							fromEmail: process.env.FROM_EMAIL || "",
 							toEmail: process.env.LECTURER_EMAIL || "",
+							userZoomLink,
 						}),
 					]);
 				} catch (emailError) {

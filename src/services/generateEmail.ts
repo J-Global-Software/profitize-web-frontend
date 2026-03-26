@@ -162,7 +162,7 @@ export function generateHTMLEmail(locale: string, htmlGreetingName: string, data
 `;
 }
 
-export function generateLecturerNotificationHTML(data: EmailData, messages: ServerMessages): string {
+export function generateLecturerNotificationHTML(data: EmailData, messages: ServerMessages, userZoomLink: string): string {
 	const phoneRow = data.phone.trim() ? `<div class="row"><span class="label">Phone Number:</span><span class="value">${data.phone}</span></div>` : "";
 
 	const messageRow = data.message.trim() ? `<div class="row"><span class="label">Message:</span><span class="value">${data.message}</span></div>` : "";
@@ -207,6 +207,8 @@ export function generateLecturerNotificationHTML(data: EmailData, messages: Serv
           ${messageRow}
           <div class="row"><span class="label">Date:</span><span class="value">${data.date}</span></div>
           <div class="row"><span class="label">Time:</span><span class="value">${data.time} (JST)</span></div>
+          <div class="row"><span class="label">Zoom Link:</span><span class="value">${userZoomLink}</span></div>
+
         </div>
 
         <p style="margin-top:24px;">You can find the event details and the Zoom link in the calendar event description.</p>

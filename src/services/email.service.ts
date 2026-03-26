@@ -89,8 +89,8 @@ export const EmailService = {
 	/**
 	 * Notifies Lecturer of a new booking
 	 */
-	async sendLecturerNotification({ userData, messages, fromEmail, toEmail }: { userData: BookingPayload; messages: ServerMessages; fromEmail: string; toEmail: string }) {
-		const htmlContent = generateLecturerNotificationHTML(userData, messages);
+	async sendLecturerNotification({ userData, messages, fromEmail, toEmail, userZoomLink }: { userData: BookingPayload; messages: ServerMessages; fromEmail: string; toEmail: string; userZoomLink: string }) {
+		const htmlContent = generateLecturerNotificationHTML(userData, messages, userZoomLink);
 		return resend.emails.send({
 			from: fromEmail,
 			to: toEmail,

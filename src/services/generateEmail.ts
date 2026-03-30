@@ -491,8 +491,15 @@ export function generateWorkshopConfirmationHTML(locale: string, firstName: stri
 	const closingText = locale === "ja" ? "お忘れのないよう、カレンダーへの追加をお勧めいたします。<br>当日お会いできることを楽しみにしております。" : "We highly recommend adding this to your calendar so you don't miss it.<br>See you soon!";
 
 	// Reusing your existing Google/Outlook link generators
-	const dateStr = workshopDate.toISOString().split("T")[0];
-	const timeStr = workshopDate.toISOString().split("T")[1].substring(0, 5);
+	const jstString = workshopDate.toLocaleString("sv-SE", { timeZone: "Asia/Tokyo" });
+
+	// 2. Split it by the space to get the date and time parts
+	const [dateStr, fullTimeStr] = jstString.split(" ");
+
+	// 3. Grab just the "HH:mm"
+	const timeStr = fullTimeStr.substring(0, 5);
+
+	// 4. Pass to your calendar functions
 	const calendarUrl = generateGoogleCalendarUrl(dateStr, timeStr);
 	const outlookUrl = generateOutlookUrl(dateStr, timeStr);
 

@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { loadServerMessages } from "@/messages/server";
-import { generateCancelHTMLEmail, generateContactNotificationHTML, generateHTMLEmail, generateLecturerCancelNotificationHTML, generateLecturerNotificationHTML, generateLecturerRescheduleNotificationHTML, generatePlainTextEmail, generateRescheduleHTMLEmail } from "./generateEmail";
+import { generateCancelHTMLEmail, generateContactNotificationHTML, generateHTMLEmail, generateLecturerCancelNotificationHTML, generateLecturerNotificationHTML, generateLecturerRescheduleNotificationHTML, generatePlainTextEmail, generateRescheduleHTMLEmail, generateWorkshopConfirmationHTML } from "./generateEmail";
 import { BookingPayload } from "@/src/types/booking";
 
 // Capture the type from the loader
@@ -59,6 +59,16 @@ interface RescheduleUserParams extends BaseEmailParams {
 	newEnd: Date;
 	userZoomLink: string;
 	managementUrl: string;
+}
+
+interface WorkshopConfirmationParams extends BaseEmailParams {
+	fromEmail: string;
+	toEmail: string;
+	firstName: string;
+	lastName: string;
+	workshopDate: Date;
+	zoomLink: string;
+	language: "en" | "jp" | "bilingual";
 }
 
 export const EmailService = {
@@ -162,6 +172,21 @@ export const EmailService = {
 			to: params.toEmail,
 			replyTo: params.email.toLowerCase().trim(),
 			subject: `New Contact Message (ID: ${params.messageId})`,
+			html: htmlContent,
+		});
+	},
+
+	async sendWorkshopConfirmation(params: { toEmail: string; firstName: string; lastName: string; workshopDate: Date; zoomLink: string; language: "en" | "jp" | "bilingual"; fromEmail: string; locale: string; messages: ServerMessages }) {
+		console.log(`[TRACE INSIDE] 2. Inside function. Email: ${params.toEmail} | Link: ${params.zoomLink}`);
+		// You'll need to import generateWorkshopConfirmationHTML from "./generateEmail" at the top!
+		const htmlContent = generateWorkshopConfirmationHTML(params.locale, params.firstName, params.lastName, params.workshopDate, params.zoomLink, params.messages);
+
+		const subject = params.locale === "ja" ? "ワークショップ参加登録の完了" : "Your Workshop Registration is Confirmed!";
+
+		return resend.emails.send({
+			from: params.fromEmail,
+			to: params.toEmail,
+			subject: subject,
 			html: htmlContent,
 		});
 	},

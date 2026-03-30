@@ -12,41 +12,35 @@ export default async function WorkshopsPage() {
 
 	// 2. Format the raw database rows into the clean strings the UI wants
 	const formattedSlots = workshops.map((workshop) => {
-		// Notice we use workshop.eventDate here because we aliased it in the SQL query!
+		// 1. Create the Date object from your database timestamp
 		const eventDate = new Date(workshop.eventDate);
 
-		// We use Intl.DateTimeFormat to ensure the server formats it correctly
-		const dateStr = new Intl.DateTimeFormat("en-US", {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-			timeZone: "Asia/Tokyo", // Adjust timezone if needed!
-		}).format(eventDate);
+		// 2. Add 1.5 hours (90 minutes) to calculate the end time
+		const endDate = new Date(eventDate.getTime() + 90 * 60 * 1000);
 
-		const timeStr =
-			new Intl.DateTimeFormat("en-US", {
-				hour: "numeric",
-				minute: "2-digit",
-				timeZone: "Asia/Tokyo",
-			}).format(eventDate) + " – 9:30 PM";
-
+		// 3. Determine Language Codes
 		let langCode = "EN";
-		let fullLang = "English / Bilingual";
+		let fullLang = "English";
 
 		if (workshop.language === "jp") {
 			langCode = "JP";
 			fullLang = "Japanese (日本語)";
 		} else if (workshop.language === "bilingual") {
-			langCode = "BI";
+			langCode = "(EN/JP)";
 			fullLang = "Bilingual (EN/JP)";
 		}
 
+		// 4. Return the exact structure our new UI component expects
 		return {
 			id: workshop.id,
-			date: dateStr,
-			time: timeStr,
 			lang: langCode,
 			full: fullLang,
+			title: workshop.title,
+			title_jp: workshop.title_jp,
+			// .toISOString() passes standard UTC strings to the frontend
+			// e.g., "2024-06-30T11:00:00.000Z"
+			startTime: eventDate.toISOString(),
+			endTime: endDate.toISOString(),
 		};
 	});
 

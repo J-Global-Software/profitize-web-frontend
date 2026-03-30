@@ -10,6 +10,7 @@ export const WorkshopRepository = {
             SELECT 
                 id, 
                 title, 
+				title_jp,
                 event_date AS "eventDate", 
                 zoom_join_url AS "zoomJoinUrl", 
                 language 

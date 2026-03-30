@@ -1,6 +1,7 @@
 export interface Workshop {
 	id: string;
 	title: string;
+	title_jp?: string;
 	eventDate: string; // or Date
 	zoomJoinUrl: string;
 	language: "en" | "jp" | "bilingual";

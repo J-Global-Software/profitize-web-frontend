@@ -38,6 +38,12 @@
         "rescheduledIntro": "Your coaching session has been successfully rescheduled.",
         "originalDate": "Original Date",
         "newDate": "New Date",
-        "changeBooking": "Change Booking"
+        "changeBooking": "Change Booking",
+        "workshopSubject": "Your Workshop Registration is Confirmed!",
+        "workshopHeader": "Workshop Registration Confirmed",
+        "workshopBadge": "Workshop Confirmed",
+        "workshopIntro": "Thank you for claiming your spot for the Profitize Workshop. We've successfully reserved your seat.",
+        "workshopDetails": "Workshop Details",
+        "workshopClosing": "We highly recommend adding this to your calendar so you don't miss it.<br>See you soon!"
     }
 }

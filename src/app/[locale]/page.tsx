@@ -44,8 +44,8 @@ export default function GlobalConsulting() {
  */}
 				<ClientLogos />
 
-				{/* Resources
-				<Resources /> */}
+				{/* Resources*/}
+				<Resources />
 			</main>
 
 			{/* Footer */}

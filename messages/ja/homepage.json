@@ -288,5 +288,45 @@
                 "highlight": "高インパクト"
             }
         ]
+    },
+    "Workshop": {
+        "badge": "リーダーと起業家のための対話型 無料ワークショップ（90分間）",
+        "title": "Profitize：持続可能な成長の技術をマスターする",
+        "description": "業務の効率が悪いために、収益の機会を逃していませんか？非効率的な業務を合理化し、数多くの組織の収益改善を支援してきたエキスパート・ファシリテーター、ジョン・リンチのワークショップにご参加ください。ワークショップでは、苦戦している部門を収益源へと変えるための実際の手法を学びます。",
+        "features": {
+            "goalClarity": {
+                "title": "目標の明確化"
+            },
+            "processMapping": {
+                "title": "プロセスマッピング"
+            },
+            "growthTracking": {
+                "title": "成長の追跡"
+            },
+            "teamBuyIn": {
+                "title": "チームの賛同"
+            },
+            "cashflowMastery": {
+                "title": "キャッシュフローの習得"
+            }
+        },
+        "bookingTitle": "席を予約する",
+        "noSlots": "現在、予定されているワークショップはありません。",
+        "bookButton": "予約",
+        "modalSuccessTitle": "予約が完了しました！",
+        "modalSuccessBody": "お席を確保しました。Zoomリンクを記載したメールをすぐにお送りしますのでご確認ください。",
+        "modalFormTitle": "席を確保する",
+        "modalFormBody": "以下の詳細を入力して、参加を確定してください。",
+        "form": {
+            "firstName": "名",
+            "lastName": "姓",
+            "email": "メールアドレス",
+            "select": "セッションを選択…",
+            "submit": "予約を確定する",
+            "submitting": "予約を処理中..."
+        },
+        "errors": {
+            "default": "エラーが発生しました。もう一度お試しください。"
+        }
     }
 }

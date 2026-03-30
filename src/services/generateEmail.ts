@@ -472,3 +472,131 @@ export function generateContactNotificationHTML(params: { messageId: string; ses
 </html>
     `;
 }
+
+export function generateWorkshopConfirmationHTML(locale: string, firstName: string, lastName: string, workshopDate: Date, zoomLink: string, messages: ServerMessages): string {
+	const greetingName = locale === "ja" ? lastName : firstName;
+	const formattedDate =
+		workshopDate.toLocaleString(locale === "ja" ? "ja-JP" : "en-US", {
+			timeZone: "Asia/Tokyo",
+			dateStyle: "long",
+			timeStyle: "short",
+		}) + " JST";
+
+	// Text overrides based on locale (since workshops might not have dedicated keys in your messages object yet)
+	const headerTitle = locale === "ja" ? "ワークショップ参加登録完了" : "Workshop Registration Confirmed";
+	const introText = locale === "ja" ? "「Profitize: 持続可能な成長の技術」ワークショップへの参加登録が完了いたしました。お席を確保しております。" : "Thank you for claiming your spot for the Profitize Workshop. We've successfully reserved your seat.";
+	const detailHeader = locale === "ja" ? "ワークショップ詳細" : "Workshop Details";
+	const dateLabel = locale === "ja" ? "日時" : "Date & Time";
+	const zoomLabel = locale === "ja" ? "Zoomリンク" : "Zoom Link";
+	const closingText = locale === "ja" ? "お忘れのないよう、カレンダーへの追加をお勧めいたします。<br>当日お会いできることを楽しみにしております。" : "We highly recommend adding this to your calendar so you don't miss it.<br>See you soon!";
+
+	// Reusing your existing Google/Outlook link generators
+	const dateStr = workshopDate.toISOString().split("T")[0];
+	const timeStr = workshopDate.toISOString().split("T")[1].substring(0, 5);
+	const calendarUrl = generateGoogleCalendarUrl(dateStr, timeStr);
+	const outlookUrl = generateOutlookUrl(dateStr, timeStr);
+
+	return `
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 0; background-color:#f8fafc;">
+  <tr>
+    <td align="center">
+      <table width="540" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 10px 15px -3px rgba(0,0,0,0.04); overflow:hidden;">
+        
+        <tr>
+          <td style="padding:48px; text-align:center;">
+            <span style="display:inline-block; background-color:#f0f7ff; color:#1e40af; font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:20px;">
+              PROFITIZE WORKSHOP
+            </span>
+            <h1 style="margin:0; font-size:24px; font-weight:800; color:#0f172a; line-height:1.2;">
+              ${headerTitle}
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 48px 48px 48px; font-size:15px; line-height:1.6; color:#475569;">
+            <p>${interpolate(messages.server.email.hi, { name: greetingName })}</p>
+            <p>${introText}</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border-radius:12px; padding:24px; margin:20px 0; border:1px solid #f1f5f9;">
+              <tr><td colspan="2" style="font-weight:700; color:#0f172a; font-size:16px; padding-bottom:12px; border-bottom:1px solid #e2e8f0; margin-bottom:12px; display:block;">${detailHeader}</td></tr>
+              
+              <tr>
+                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:12px; padding-bottom:4px; width:100px;">${dateLabel}</td>
+                <td style="font-size:15px; font-weight:600; color:#1e293b; padding-top:12px;">${formattedDate}</td>
+              </tr>
+              <tr>
+                <td style="font-size:11px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; padding-top:8px; padding-bottom:4px; vertical-align:top;">${zoomLabel}</td>
+                <td style="font-size:15px; font-weight:600; color:#1e293b; padding-top:8px;">
+                  <a href="${zoomLink}" style="color:#2563eb; text-decoration:none;">${zoomLink}</a>
+                </td>
+              </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:30px 0;">
+              <tr>
+                <td align="center">
+                  <a href="${zoomLink}" style="display:inline-block; background-color:#0f172a; color:#ffffff !important; text-decoration:none !important; padding:13px 24px; border-radius:10px; font-weight:600; font-size:15px;">
+                    ${messages.server.email.zoomLink}
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin-top:24px;">${closingText}</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
+              <tr>
+                <td align="center">
+                  <a href="${calendarUrl}" style="font-size:12px; color:#0f172a; text-decoration:none; font-weight:700; margin:0 6px;">${messages.server.email.calendar.google}</a>
+                  <a href="${outlookUrl}" style="font-size:12px; color:#0f172a; text-decoration:none; font-weight:700; margin:0 6px;">${messages.server.email.calendar.outlook}</a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin-top:32px; font-size:14px; color:#666; border-top:1px solid #f1f5f9; padding-top:24px;">
+              ${messages.server.email.contact} <br/>
+              <a href="mailto:${messages.server.email.supportEmail}" style="color:#2563eb; text-decoration:none;">${messages.server.email.supportEmail}</a>
+            </p>
+
+            <p style="margin-top:24px;">— ${messages.server.email.teamName}</p>
+          </td>
+        </tr>
+      </table>
+
+      <table width="540" cellpadding="0" cellspacing="0" border="0" style="margin:40px auto; text-align:center; font-family:Arial, sans-serif; font-size:12px; color:#666;">
+        <tr>
+          <td>
+            <img src="https://profitize.jp/images/logo.png" alt="Profitize.jp" style="max-width:120px; margin-bottom:24px; opacity:0.9; display:block; margin-left:auto; margin-right:auto;">
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:10px;">
+            <a href="${locale === "ja" ? "https://profitize.jp/" : "https://profitize.jp/en/"}" style="color:#1a73e8; text-decoration:none; margin-right:15px;">${messages.server.email.footerWebsite}</a>
+            <a href="${locale === "ja" ? "https://profitize.jp/privacy-policy/" : "https://profitize.jp/en/privacy-policy/"}" style="color:#1a73e8; text-decoration:none;">${messages.server.email.footerPrivacy}</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:11px; color:#cbd5e1; line-height:1.6;">
+            &copy; ${new Date().getFullYear()} Profitize Inc.<br>
+            ${messages.server.email.footerCopyright}
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
+`;
+}

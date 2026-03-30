@@ -10,7 +10,7 @@ import { setSessionCookie } from "@/src/utils/session-cookies.util";
 const redis = Redis.fromEnv();
 const limiter = new Ratelimit({
 	redis,
-	limiter: Ratelimit.slidingWindow(5, "30m"), // Stricter window for workshop registrations
+	limiter: Ratelimit.slidingWindow(30, "30m"), // Stricter window for workshop registrations
 });
 
 export async function POST(req: NextRequest) {

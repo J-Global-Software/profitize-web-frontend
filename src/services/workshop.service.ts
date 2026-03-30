@@ -1,3 +1,4 @@
+import { loadServerMessages } from "@/messages/server";
 import { WorkshopRepository } from "../repositories/workshop.repository";
 import { EmailService } from "./email.service";
 import { RegisterWorkshopDTO } from "@/src/types/workshop";
@@ -11,6 +12,29 @@ export const WorkshopService = {
 
 			// 2. Register the user in the database
 			const { registrationId } = await WorkshopRepository.registerUser(payload, sessionId);
+
+			const messages = await loadServerMessages(locale);
+
+			try {
+				const traceId = Math.random().toString(36).substring(7);
+				console.log(workshop.zoomJoinUrl);
+				console.log(`[TRACE ${traceId}] 1. Right before function:`, workshop.zoomJoinUrl);
+				await EmailService.sendWorkshopConfirmation({
+					toEmail: payload.email,
+					firstName: payload.firstName,
+					lastName: payload.lastName,
+					workshopDate: new Date(workshop.eventDate),
+					zoomLink: workshop.zoomJoinUrl,
+					language: workshop.language,
+					fromEmail: process.env.FROM_EMAIL || "",
+					locale: locale,
+					messages,
+				});
+			} catch (emailError) {
+				console.error("Failed to send email, but user is registered:", emailError);
+				// Decide if you want to throw here or just log it. Usually, we just log it
+				// so the user still sees a success screen.
+			}
 
 			return { registrationId, success: true };
 		} catch (error) {

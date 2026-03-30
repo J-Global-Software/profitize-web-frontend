@@ -38,6 +38,12 @@
         "rescheduledIntro": "ご予約のコーチングセッションが正常に変更されました。",
         "originalDate": "元の日時",
         "newDate": "新しい日時",
-        "changeBooking": "予約内容を変更"
+        "changeBooking": "予約内容を変更",
+        "workshopSubject": "【Profitize】ワークショップ参加登録の完了",
+        "workshopHeader": "ワークショップ参加登録完了",
+        "workshopBadge": "ワークショップ予約確定",
+        "workshopIntro": "「Profitize: 持続可能な成長の技術」ワークショップへの参加登録が完了いたしました。お席を確保しております。",
+        "workshopDetails": "ワークショップ詳細",
+        "workshopClosing": "お忘れのないよう、カレンダーへの追加をお勧めいたします。<br>当日お会いできることを楽しみにしております。"
     }
 }

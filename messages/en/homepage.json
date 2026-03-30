@@ -288,5 +288,45 @@
                 "highlight": "High Impact"
             }
         ]
+    },
+    "Workshop": {
+        "badge": "A Free, 90-Minute Interactive Workshop",
+        "title": "Profitize: Master the Art of Sustainable Growth",
+        "description": "Stop leaving money on the table. Join Jon Lynch to learn the exact frameworks used to turn struggling departments into profit centers. Streamline your \"hidden\" inefficiencies in this practical session.",
+        "features": {
+            "goalClarity": {
+                "title": "Goal Clarity"
+            },
+            "processMapping": {
+                "title": "Process Mapping"
+            },
+            "growthTracking": {
+                "title": "Growth Tracking"
+            },
+            "teamBuyIn": {
+                "title": "Team Buy-In"
+            },
+            "cashflowMastery": {
+                "title": "Cashflow Mastery"
+            }
+        },
+        "bookingTitle": "Reserve Your Seat",
+        "noSlots": "No upcoming workshops available right now.",
+        "bookButton": "Book",
+        "modalSuccessTitle": "Seat Reserved!",
+        "modalSuccessBody": "We've saved your spot. Check your email shortly for the Zoom link.",
+        "modalFormTitle": "Claim Your Spot",
+        "modalFormBody": "Fill out the details below to secure your entry.",
+        "form": {
+            "firstName": "First name",
+            "lastName": "Last name",
+            "email": "Email address",
+            "select": "Select a session…",
+            "submit": "Confirm Reservation",
+            "submitting": "Securing your spot..."
+        },
+        "errors": {
+            "default": "Something went wrong. Please try again."
+        }
     }
 }

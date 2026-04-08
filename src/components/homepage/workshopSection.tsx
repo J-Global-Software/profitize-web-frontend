@@ -89,6 +89,7 @@ export default function ProfitizeWorkshop({ workshopSlots }: { workshopSlots: Wo
 			weekday: "short",
 			month: "short",
 			day: "numeric",
+			timeZone: "Asia/Tokyo", // This forces JST everywhere
 		});
 	};
 

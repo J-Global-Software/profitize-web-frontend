@@ -39,8 +39,8 @@ export default async function WorkshopsPage() {
 			title_jp: workshop.title_jp,
 			// .toISOString() passes standard UTC strings to the frontend
 			// e.g., "2024-06-30T11:00:00.000Z"
-			startTime: eventDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }),
-			endTime: endDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }),
+			startTime: eventDate.toISOString(),
+			endTime: endDate.toISOString(),
 		};
 	});
 

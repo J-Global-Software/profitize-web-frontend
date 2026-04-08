@@ -14,5 +14,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
 	// Merge into one messages object
 	const messages = { homepage, consultation };
 
-	return { locale, messages };
+	return {
+		locale,
+		messages,
+		timeZone: "Asia/Tokyo",
+	};
 });

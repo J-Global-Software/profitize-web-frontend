@@ -7,13 +7,12 @@ import { FiX, FiCheckCircle, FiArrowRight, FiTarget, FiMap, FiTrendingUp, FiUser
 
 export interface WorkshopSlot {
 	id: string;
-	lang: string; // e.g., "EN" or "JP"
+	lang: string;
 	full: string;
 	title: string;
 	title_jp?: string;
-	// Pass standard ISO 8601 strings from your database
-	startTime: string; // e.g., "2024-06-30T20:00:00Z"
-	endTime: string; // e.g., "2024-06-30T21:30:00Z"
+	startTime: string;
+	endTime: string;
 }
 
 const featureItems = [
@@ -29,7 +28,6 @@ export default function ProfitizeWorkshop({ workshopSlots }: { workshopSlots: Wo
 	const locale = useLocale();
 	const format = useFormatter();
 
-	// Modal & UI State
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedSlotId, setSelectedSlotId] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,19 +81,24 @@ export default function ProfitizeWorkshop({ workshopSlots }: { workshopSlots: Wo
 		}
 	};
 
-	// Helper functions to format dates dynamically via next-intl
+	// --- UPDATED FORMATTERS ---
 	const formatLocalizedDate = (dateString: string) => {
 		return format.dateTime(new Date(dateString), {
 			weekday: "short",
 			month: "short",
 			day: "numeric",
-			timeZone: "Asia/Tokyo", // This forces JST everywhere
+			timeZone: "Asia/Tokyo", // Locked to JST
 		});
 	};
 
 	const formatLocalizedTimeRange = (startStr: string, endStr: string) => {
-		const start = format.dateTime(new Date(startStr), { hour: "numeric", minute: "2-digit" });
-		const end = format.dateTime(new Date(endStr), { hour: "numeric", minute: "2-digit" });
+		const options: any = {
+			hour: "numeric",
+			minute: "2-digit",
+			timeZone: "Asia/Tokyo", // Locked to JST
+		};
+		const start = format.dateTime(new Date(startStr), options);
+		const end = format.dateTime(new Date(endStr), options);
 		return `${start} – ${end}`;
 	};
 
@@ -116,7 +119,6 @@ export default function ProfitizeWorkshop({ workshopSlots }: { workshopSlots: Wo
 							</div>
 
 							<h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 leading-[1.15] tracking-tight">{t("title")}</h2>
-
 							<p className="text-slate-300 text-base leading-relaxed mb-10 max-w-md">{t("description")}</p>
 
 							<div className="flex flex-wrap gap-3">
@@ -137,7 +139,9 @@ export default function ProfitizeWorkshop({ workshopSlots }: { workshopSlots: Wo
 								<FiCalendar className="text-blue-600" />
 								{t("bookingTitle")}
 							</h3>
-							<span className="text-sm font-semibold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{workshopSlots.length} Available</span>
+							<span className="text-sm font-semibold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+								{workshopSlots.length} {t("available")}
+							</span>
 						</div>
 
 						<div className="flex flex-col gap-4 flex-grow">

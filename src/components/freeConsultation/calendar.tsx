@@ -194,7 +194,9 @@ export default function BookingCalendar({ selectedDate, onDateSelect, selectedSl
 								{t("common.retry")}
 							</button>
 						</div>
-					) : previewSlots.length === 0 ? (
+					) : !selectedDate ? (
+						<div className="col-span-2 text-gray-400 font-bold text-center py-10">{locale === "en" ? "Select a date in order to see slots" : "予約枠を表示するには日付を選択してください"}</div>
+					) : availableSlots.length === 0 ? (
 						<div className="col-span-2 text-gray-400 font-bold text-center py-10">{t("booking.noSlots")}</div>
 					) : (
 						<>

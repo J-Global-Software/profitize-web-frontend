@@ -1,11 +1,12 @@
 "use client";
 
 import { Link } from "@/src/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 
 export default function Hero() {
 	const t = useTranslations("homepage");
+	const locale = useLocale();
 
 	return (
 		<section className="relative overflow-hidden bg-[#f8faff]">
@@ -63,7 +64,7 @@ export default function Hero() {
 						<div
 							className="relative w-full aspect-[4/3] bg-center bg-cover rounded-[2rem] shadow-2xl overflow-hidden border border-white/50"
 							style={{
-								backgroundImage: 'url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=1000&fit=crop")',
+								backgroundImage: `url("/images/hero_${locale}.jpg")`,
 							}}
 						>
 							{/* Blue overlay tint */}
